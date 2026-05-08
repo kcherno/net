@@ -9,7 +9,7 @@
 
 namespace net::generic
 {
-    class basic_ip_endpoint
+    class basic_ip_endpoint : public basic_endpoint
     {
     public:
 
@@ -21,8 +21,8 @@ namespace net::generic
 
         virtual void address(std::string_view) = 0;
 
-        virtual constexpr port() const noexcept = 0;
+        virtual constexpr port_type port() const noexcept = 0;
 
-        virtual constexpr port(port_type) noexcept = 0;
+        virtual constexpr void port(port_type) noexcept = 0;
     };
 }
