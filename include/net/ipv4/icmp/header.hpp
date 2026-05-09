@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string_view>
+#include <string>
+
 #include <cstdint>
 
 namespace net::ipv4::icmp
@@ -29,4 +32,6 @@ namespace net::ipv4::icmp
 
         inline static constexpr std::size_t echo_message_header_size = 8;
     };
+
+    std::string make_icmp_message(header::type_enumerator, std::string_view);
 }
