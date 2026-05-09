@@ -11,10 +11,6 @@
 
 #include "net/ipv4/endpoint.hpp"
 
-BOOST_AUTO_TEST_SUITE(net);
-
-BOOST_AUTO_TEST_SUITE(ipv4);
-
 BOOST_AUTO_TEST_SUITE(endpoint);
 
 BOOST_AUTO_TEST_SUITE(constructor);
@@ -62,14 +58,8 @@ BOOST_AUTO_TEST_CASE(initialization_by_valid_address)
     BOOST_CHECK_NO_THROW(net::ipv4::endpoint {"0.0.0.0"});
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END(); // endpoint/constructor/parameterized_constructor
 
-// net/ipv4/endpoint/constructor/parameterized_constructor
+BOOST_AUTO_TEST_SUITE_END(); // endpoint/constructor
 
-BOOST_AUTO_TEST_SUITE_END(); // net/ipv4/endpoint/constructor
-
-BOOST_AUTO_TEST_SUITE_END(); // net/ipv4/endpoint
-
-BOOST_AUTO_TEST_SUITE_END(); // net/ipv4
-
-BOOST_AUTO_TEST_SUITE_END(); // net
+BOOST_AUTO_TEST_SUITE_END(); // endpoint

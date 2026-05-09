@@ -5,11 +5,11 @@
 
 #include <netinet/in.h>
 
-#include "generic/basic_endpoint.hpp"
+#include "net/generic/basic_endpoint.hpp"
 
 namespace net::ipv4::generic
 {
-    class basic_endpoint : public generic::basic_endpoint
+    class basic_endpoint : public net::generic::basic_endpoint
     {
     public:
 

@@ -13,8 +13,8 @@
 
 #include "generic/basic_endpoint.hpp"
 
-#include "to_network_byte_order.hpp"
-#include "to_host_byte_order.hpp"
+#include "net/to_network_byte_order.hpp"
+#include "net/to_host_byte_order.hpp"
 
 namespace net::ipv4
 {
