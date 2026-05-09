@@ -117,7 +117,7 @@ namespace net::generic
         {
             std::error_code error;
 
-            if (endpoint(error, endpoint); error)
+            if (this->endpoint(error, endpoint); error)
             {
                 throw std::system_error {error, "basic_socket::endpoint"};
             }
@@ -131,10 +131,14 @@ namespace net::generic
             {
                 error = std::make_error_code(
                     std::errc::bad_file_descriptor);
+
+                return;
             }
 
+            auto endpoint_size = endpoint.size();
+
             const auto result = ::getsockname(
-                native_handler(), endpoint.data(), endpoint.size());
+                native_handler(), endpoint.data(), &endpoint_size);
 
             if (result == -1)
             {
@@ -166,7 +170,7 @@ namespace net::generic
 
             if (open(error); error)
             {
-                throw std::system_error {"basic_socket::open"};
+                throw std::system_error {error, "basic_socket::open"};
             }
         }
 

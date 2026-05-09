@@ -78,13 +78,15 @@ namespace net::generic
                 return;
             }
 
+            auto endpoint_size = endpoint.size();
+
             const auto receive_bytes = ::recvfrom(
                 native_handler(),
                 string.data(),
                 string.capacity(),
                 flags,
                 endpoint.data(),
-                endpoint.size());
+                &endpoint_size);
 
             if (receive_bytes == -1)
             {
