@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <utility>
 #include <string>
 
 #include <cstdint>
@@ -34,4 +35,7 @@ namespace net::ipv4::icmp
     };
 
     std::string make_icmp_message(const header&, std::string_view);
+
+    std::pair<header, std::string> unpack_icmp_message(
+        header::type_enumerator, std::string_view);
 }

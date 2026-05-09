@@ -1,5 +1,6 @@
 #include <string_view>
 #include <stdexcept>
+#include <utility>
 #include <string>
 
 #include "net/ipv4/icmp/header.hpp"
@@ -76,3 +77,17 @@ std::string make_icmp_message(const header& header, std::string_view data)
     }
 }
 
+std::pair<header, std::string> unpack_icmp_message(
+    header::type_enumerator type, std::string_view data)
+{
+    switch (type)
+    {
+        default:
+        {
+            throw std::runtime_error {
+                "unpack_icmp_message: "
+                "Undefined net::ipv4::icmp::header::type_enumerator"
+            };
+        }
+    }
+}
