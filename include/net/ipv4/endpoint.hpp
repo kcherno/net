@@ -11,23 +11,23 @@
 
 #include <sys/socket.h>
 
-#include "generic/basic_ip_endpoint.hpp"
+#include "generic/basic_endpoint.hpp"
 
 #include "to_network_byte_order.hpp"
 #include "to_host_byte_order.hpp"
 
-namespace net
+namespace net::ipv4
 {
-    class ip_v4_endpoint final : public generic::basic_ip_endpoint
+    class endpoint final : public generic::basic_endpoint
     {
     public:
 
-        constexpr ip_v4_endpoint() noexcept :
+        constexpr endpoint() noexcept :
             address_(AF_INET)
         {}
 
-        ip_v4_endpoint(std::string_view address, port_type port = {}) :
-            ip_v4_endpoint {}
+        endpoint(std::string_view address, port_type port = {}) :
+            endpoint {}
         {
             this->address(address);
             this->port(port);
@@ -51,7 +51,7 @@ namespace net
             if (result == 0)
             {
                 throw std::runtime_error {
-                    "ip_v4_endpoint::address: invalid network address"
+                    "endpoint::address: invalid network address"
                 };
             }
         }
