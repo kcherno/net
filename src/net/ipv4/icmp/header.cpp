@@ -6,10 +6,9 @@
 
 using namespace net::ipv4::icmp;
 
-std::string make_icmp_message(
-    header::type_enumerator type, std::string_view data)
+std::string make_icmp_message(const header& header, std::string_view data)
 {
-    switch (type)
+    switch (header.type)
     {
         default:
         {
