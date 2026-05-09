@@ -5,17 +5,17 @@
 
 #include <netinet/in.h>
 
-#include "basic_endpoint.hpp"
+#include "generic/basic_endpoint.hpp"
 
-namespace net::generic
+namespace net::ipv4::generic
 {
-    class basic_ip_endpoint : public basic_endpoint
+    class basic_endpoint : public generic::basic_endpoint
     {
     public:
 
         using port_type = ::in_port_t;
 
-        virtual ~basic_ip_endpoint() = default;
+        virtual ~basic_endpoint() = default;
 
         virtual std::string address() const = 0;
 
