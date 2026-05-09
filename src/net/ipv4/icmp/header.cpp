@@ -33,6 +33,22 @@ namespace
 
         return icmp_echo_message;
     }
+
+    std::string make_icmp_echo_replay_message(
+        const header& header, std::string_view data)
+    {
+        auto icmp_echo_message = make_icmp_echo_message(header, data);
+
+        auto icmp_header = reinterpret_cast<header*>(icmp_echo_message.data());
+
+        icmp_header->type = header::type_enumeratore::echo_replay;
+
+        icmp_header->checksum = 0;
+
+        icmp_header->checksum = calculate_checksum(icmp_echo_message);
+
+        return make_icmp_echo_message;
+    }
 }
 
 std::string make_icmp_message(const header& header, std::string_view data)
@@ -41,6 +57,11 @@ std::string make_icmp_message(const header& header, std::string_view data)
 
     switch (header.type)
     {
+        case echo_replay:
+        {
+            return make_icmp_echo_replay_message(header, data);
+        }
+
         case echo:
         {
             return make_icmp_echo_message(header, data);
