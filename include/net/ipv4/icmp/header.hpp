@@ -8,11 +8,25 @@ namespace net::ipv4::icmp
     {
         enum class type_enumerator : std::uint8_t
         {
-
+            echo_replay = 0,
+            echo        = 8
         };
 
         type_enumerator type;
         std::uint8_t    code;
         std::uint16_t   checksum;
+
+        union
+        {
+            struct
+            {
+
+                std::uint16_t identifier;
+                std::uint16_t sequence_number;
+
+            } echo_message;
+        };
+
+        inline static constexpr std::size_t echo_message_header_size = 8;
     };
 }
