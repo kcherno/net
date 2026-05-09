@@ -25,24 +25,6 @@ namespace net::generic
 
         basic_socket() = default;
 
-        basic_socket(const basic_endpoint& endpoint)
-        {
-            open();
-
-            bind(endpoint);
-        }
-
-        basic_socket(
-            std::error_code& error, const basic_endpoint& endpoint) noexcept
-        {
-            if (open(error); error)
-            {
-                return;
-            }
-
-            bind(error, endpoint);
-        }
-
         basic_socket(const basic_socket&) = delete;
 
         basic_socket(basic_socket&& other) noexcept(

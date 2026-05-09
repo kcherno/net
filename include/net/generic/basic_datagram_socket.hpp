@@ -28,15 +28,6 @@ namespace net::generic
                 basic_socket {std::move(other)}
         {}
 
-        basic_datagram_socket(const basic_endpoint& endpoint) :
-            basic_socket {endpoint}
-        {}
-
-        basic_datagram_socket(
-            std::error_code& error, const basic_endpoint& endpoint) noexcept :
-                basic_socket {error, endpoint}
-        {}
-
         basic_datagram_socket& operator=(
             const basic_datagram_socket&) = delete;
 
