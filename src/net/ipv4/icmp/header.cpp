@@ -8,6 +8,7 @@
 #include "net/ipv4/calculate_checksum.hpp"
 
 #include "net/to_network_byte_order.hpp"
+#include "net/to_host_byte_order.hpp"
 
 using namespace net::ipv4::icmp;
 
@@ -50,6 +51,30 @@ namespace
 
         return make_icmp_echo_message;
     }
+
+    std::pair<header, std::string> unpack_icmp_echo_message(
+        std::string_view data)
+    {
+        auto icmp_header = reinterpret_cast<const header*>(data.data());
+
+        return std::pair {
+            header {
+                .type     = icmp_header->type,
+                .code     = icmp_header->code,
+                .checksum = icmp_header->checksum,
+
+                echo_message {
+                    .identifier = net::to_host_byte_order(
+                        icmp_header->echo_message.identifier),
+
+                    .sequence_number = net::to_host_byte_order(
+                        icmp_header->echo_message.sequence_number)
+                }
+            },
+
+            std::string {data.substr(header::echo_message_header_size)};
+        };
+    }
 }
 
 std::string make_icmp_message(const header& header, std::string_view data)
@@ -82,6 +107,21 @@ std::pair<header, std::string> unpack_icmp_message(
 {
     switch (type)
     {
+        case echo_replay:
+        case echo:
+        {
+            if (data.size < header::echo_message_header_size)
+            {
+                throw std::runtime_error {
+                    "unpack_icmp_message: To unpack an echo message, "
+                    "data.size() must be >= "
+                    "net::ipv4::header::echo_message_header_size"
+                };
+            }
+
+            return unpack_icmp_echo_message(data);
+        }
+
         default:
         {
             throw std::runtime_error {
