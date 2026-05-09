@@ -31,7 +31,9 @@ namespace net::generic
             std::is_nothrow_move_constructible_v<
                 std::optional<native_handler_type>>) :
                     socket_ {std::move(other.socket_)}
-        {}
+        {
+            other.socket_.reset();
+        }
 
         basic_socket& operator=(const basic_socket&) = delete;
 
