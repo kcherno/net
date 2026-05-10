@@ -12,8 +12,8 @@ namespace net::ipv4::icmp
     {
         enum class type_enumerator : std::uint8_t
         {
-            echo_replay = 0,
-            echo        = 8
+            echo_reply = 0,
+            echo       = 8
         };
 
         type_enumerator type;
