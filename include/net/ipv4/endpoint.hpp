@@ -23,7 +23,12 @@ namespace net::ipv4
     public:
 
         constexpr endpoint() noexcept :
-            address_(AF_INET)
+            address_ {
+                .sin_family = AF_INET,
+                .sin_port   = 0,
+                .sin_addr   = 0,
+                .sin_zero   = 0
+            }
         {}
 
         endpoint(std::string_view address, port_type port = {}) :
