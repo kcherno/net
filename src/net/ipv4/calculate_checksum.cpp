@@ -4,18 +4,16 @@
 
 #include "net/ipv4/calculate_checksum.hpp"
 
-using namespace net::ipv4;
-
-std::uint16_t calculate_checksum(std::string_view string) noexcept
+std::uint16_t net::ipv4::calculate_checksum(std::string_view string) noexcept
 {
-    std::uint32_t checksum;
+    std::uint32_t checksum = 0;
 
     auto data = string.data();
     auto size = string.size();
 
     for (; size > 1; size -=2, data += 2)
     {
-        checksum += *reinterpret_cast<std::uint16_t*>(data);
+        checksum += *reinterpret_cast<const std::uint16_t*>(data);
     }
 
     if (size)
@@ -28,5 +26,5 @@ std::uint16_t calculate_checksum(std::string_view string) noexcept
         checksum = (checksum & 0xFFFF) + (checksum >> 16);
     }
 
-    return ~(static_cast<std::uint16_t>(checksum));
+    return static_cast<std::uint16_t>(~checksum);
 }
