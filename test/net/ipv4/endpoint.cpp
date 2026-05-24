@@ -48,7 +48,8 @@ BOOST_AUTO_TEST_CASE(initialization_by_invalid_address)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "endpoint::address: invalid network address";
+                "endpoint::address: "
+                "a.b.c.d is an invalid IPv4 network address";
         }
     );
 }

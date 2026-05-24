@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <stdexcept>
+#include <format>
 #include <string>
 #include <array>
 
@@ -55,8 +56,9 @@ namespace net::ipv4
 
             if (result == 0)
             {
-                throw std::runtime_error {
-                    "endpoint::address: invalid network address"
+                throw std::runtime_error {std::format(
+                    "endpoint::address: {} is an invalid IPv4 network address",
+                    address)
                 };
             }
         }
