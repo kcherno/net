@@ -6,13 +6,20 @@ function(add_boost_unit_test source_file)
 
     get_filename_component(filename ${source_file} NAME_WLE)
 
-    add_executable(${filename} ${source_file})
+    add_executable(${filename})
 
-    target_include_directories(${filename} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    add_test(NAME ${filename} COMMAND ${filename} ${boost_unit_test_options})
+
+    target_compile_features(${filename} PRIVATE cxx_std_23)
 
     target_link_libraries(${filename} PRIVATE Boost::unit_test_framework)
 
-    add_test(NAME ${filename} COMMAND ${filename} ${boost_unit_test_options})
+    target_sources(${filename}
+        PRIVATE ${source_file}
+        
+        PRIVATE
+            FILE_SET  HEADERS
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
 endfunction()
 

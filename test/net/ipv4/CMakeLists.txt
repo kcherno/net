@@ -7,6 +7,6 @@ foreach(source_file ${source_files})
 endforeach()
 
 target_sources(calculate_checksum
-    PRIVATE ${CMAKE_SOURCE_DIR}/src/net/ipv4/calculate_checksum.cpp)
+    PRIVATE ${PROJECT_SOURCE_DIR}/src/net/ipv4/calculate_checksum.cpp)
 
 add_subdirectory(icmp)
