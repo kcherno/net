@@ -17,6 +17,7 @@ endif()
 add_library(${PROJECT_NAME} SHARED)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD_REQUIRED    ON
     LIBRARY_OUTPUT_DIRECTORY lib
     VERSION                  ${PROJECT_VERSION}
     SOVERSION                ${PROJECT_VERSION_MAJOR})
