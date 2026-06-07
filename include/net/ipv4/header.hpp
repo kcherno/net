@@ -84,6 +84,13 @@ namespace net::ipv4
             return protocol_;
         }
 
+        header& protocol(protocol_enumerator protocol) noexcept
+        {
+            protocol_ = protocol;
+
+            return *this;
+        }
+
         std::string to_string() const noexcept
         {
             std::string string(header_size(), '\0');
