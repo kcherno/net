@@ -4,6 +4,7 @@
 
 #include <string_view>
 #include <stdexcept>
+#include <ostream>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -11,7 +12,24 @@
 #include "net/ipv4/header.hpp"
 
 #include "net/to_network_byte_order.hpp"
+#include "net/protocol_enumerator.hpp"
 #include "net/to_host_byte_order.hpp"
+
+namespace net
+{
+    std::ostream& boost_test_print_type(
+        std::ostream& ostream, protocol_enumerator protocol)
+    {
+        using enum protocol_enumerator;
+
+        switch (protocol)
+        {
+            case icmp: return ostream << "net::protocol_enumerator::icmp";
+        }
+
+        return ostream;
+    }
+}
 
 BOOST_AUTO_TEST_SUITE(ipv4);
 
@@ -35,25 +53,59 @@ BOOST_AUTO_TEST_SUITE(from_data);
 
 BOOST_AUTO_TEST_CASE(empty)
 {
-    const auto optional = net::ipv4::header::from_data({});
+    const auto packet = net::ipv4::header::from_data({});
 
-    BOOST_TEST(not optional.has_value());
+    BOOST_TEST(not packet.has_value());
 }
 
 BOOST_AUTO_TEST_CASE(too_small_data)
 {
-    const auto optional = net::ipv4::header::from_data(std::string(
+    const auto packet = net::ipv4::header::from_data(std::string(
         net::ipv4::header::minimum_header_size - 1, '\0'));
 
-    BOOST_TEST(not optional.has_value());
+    BOOST_TEST(not packet.has_value());
 }
 
 BOOST_AUTO_TEST_CASE(header_only)
 {
+    net::ipv4::header header;
+
+    const auto packet = net::ipv4::header::from_data(header.to_string());
+
+    BOOST_REQUIRE(packet.has_value());
+
+    const auto& [ip_header, ip_data] = packet.value();
+
+    BOOST_CHECK_EQUAL(ip_header.header_size(), header.header_size());
+    BOOST_CHECK_EQUAL(ip_header.packet_size(), header.packet_size());
+
+    BOOST_CHECK(ip_data.empty());
 }
 
 BOOST_AUTO_TEST_CASE(header_with_data)
 {
+    net::ipv4::header header;
+    std::string       data(8, '\0');
+
+    header.packet_size(header.header_size() + data.size())
+        .protocol(net::protocol_enumerator::icmp);
+
+    const auto packet = net::ipv4::header::from_data(
+        header.to_string() + data);
+
+    BOOST_REQUIRE(packet.has_value());
+
+    const auto& [ip_header, ip_data] = packet.value();
+
+    BOOST_CHECK_EQUAL(ip_header.header_size(), header.header_size());
+    BOOST_CHECK_EQUAL(ip_header.packet_size(), header.packet_size());
+
+    BOOST_CHECK_EQUAL(
+        ip_header.packet_size(), header.header_size() + data.size());
+
+    BOOST_CHECK_EQUAL(ip_header.protocol(), net::protocol_enumerator::icmp);
+
+    BOOST_CHECK_EQUAL(ip_data.size(), data.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/from_data

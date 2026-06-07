@@ -18,7 +18,12 @@ net::ipv4::header::from_data(std::string_view data)
 
         if (pointer->version() == 4)
         {
-
+            return std::optional {
+                std::pair {
+                    header {*pointer},
+                    std::string {data.substr(pointer->header_size())}
+                }
+            };
         }
     }
 
