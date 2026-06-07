@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string_view>
+#include <stdexcept>
 #include <optional>
 #include <utility>
+#include <format>
 #include <string>
 
 #include <cstdint>
@@ -42,6 +44,32 @@ namespace net::ipv4
         constexpr std::size_t header_size() const noexcept
         {
             return (version_and_ihl_ & 0b0000'1111) * 4;
+        }
+
+        header& header_size(std::size_t size)
+        {
+            if (size < minimum_header_size || size > maximum_header_size)
+            {
+                throw std::invalid_argument {
+                    std::format(
+                        "{}: size must be in the range from {} to {}",
+                        __func__,
+                        minimum_header_size,
+                        maximum_header_size
+                    )
+                };
+            }
+
+            if (size % 4 != 0)
+            {
+                throw std::invalid_argument {
+                    std::format("{}: size must be a multiple of 4", __func__)
+                };
+            }
+
+            version_and_ihl_ = 0b0100'1111 & (size / 4);
+
+            return *this;
         }
 
         constexpr protocol_enumerator protocol() const noexcept

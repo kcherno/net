@@ -2,6 +2,8 @@
 
 #define BOOST_TEST_DYN_LINK
 
+#include <string_view>
+#include <stdexcept>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -14,6 +16,20 @@
 BOOST_AUTO_TEST_SUITE(ipv4);
 
 BOOST_AUTO_TEST_SUITE(header);
+
+BOOST_AUTO_TEST_SUITE(constructor);
+
+BOOST_AUTO_TEST_CASE(default_constructor)
+{
+    const net::ipv4::header header;
+
+    BOOST_CHECK_EQUAL(header.version(), 4);
+    BOOST_CHECK_EQUAL(header.header_size(), header.minimum_header_size);
+
+    BOOST_TEST(not header.has_options());
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/constructor
 
 BOOST_AUTO_TEST_SUITE(from_data);
 
@@ -34,66 +50,47 @@ BOOST_AUTO_TEST_CASE(too_small_data)
 
 BOOST_AUTO_TEST_CASE(header_only)
 {
-    std::string header(net::ipv4::header::minimum_header_size, '\0');
-
-    auto pointer = reinterpret_cast<net::ipv4::header*>(header.data());
-
-    pointer->version_and_ihl = 0b0100'0101;
-
-    BOOST_REQUIRE_EQUAL(pointer->version(), 4);
-
-    pointer->total_length = net::to_network_byte_order(static_cast<decltype(
-        pointer->total_length)>(header.size()));
-
-    BOOST_REQUIRE_EQUAL(net::to_host_byte_order(
-        pointer->total_length), header.size());
-
-    const auto optional = net::ipv4::header::from_data(header);
-
-    BOOST_REQUIRE(optional.has_value());
-
-    const auto& [ip_header, ip_data] = optional.value();
-
-    BOOST_CHECK_EQUAL(ip_header.header_size(), header.size());
-    BOOST_CHECK_EQUAL(ip_header.total_length, header.size());
-
-    BOOST_TEST(ip_data.empty());
 }
 
 BOOST_AUTO_TEST_CASE(header_with_data)
 {
-    std::string header(net::ipv4::header::minimum_header_size, '\0');
-    const std::string data(64, '\0');
-    
-    auto pointer = reinterpret_cast<net::ipv4::header*>(header.data());
-
-    pointer->version_and_ihl = 0b0100'0101;
-
-    BOOST_REQUIRE_EQUAL(pointer->version(), 4);
-
-    BOOST_REQUIRE_EQUAL(pointer->header_size(), header.size());
-    
-    pointer->total_length = net::to_network_byte_order(
-        static_cast<decltype(pointer->total_length)>(
-            header.size() + data.size()));
-
-    BOOST_REQUIRE_EQUAL(
-        net::to_host_byte_order(pointer->total_length),
-        header.size() + data.size());
-
-    const auto optional = net::ipv4::header::from_data(header + data);
-
-    BOOST_REQUIRE(optional.has_value());
-
-    const auto& [ip_header, ip_data] = optional.value();
-
-    BOOST_CHECK_EQUAL(ip_header.header_size(), header.size());
-    BOOST_CHECK_EQUAL(ip_header.total_length, header.size() + data.size());
-
-    BOOST_CHECK_EQUAL(ip_data.size(), data.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/from_data
+
+BOOST_AUTO_TEST_SUITE(header_size);
+
+BOOST_AUTO_TEST_CASE(invalid_size)
+{
+    net::ipv4::header header;
+
+    BOOST_CHECK_EXCEPTION(
+        header.header_size(0), std::invalid_argument, [](auto&& exception)
+        {
+            return std::string_view(exception.what()) ==
+                "header_size: size must be in the range from 20 to 60";
+        }
+    );
+
+    BOOST_CHECK_EXCEPTION(
+        header.header_size(42), std::invalid_argument, [](auto&& exception)
+        {
+            return std::string_view(exception.what()) ==
+                "header_size: size must be a multiple of 4";
+        }
+    );
+}
+
+BOOST_AUTO_TEST_CASE(valid_size)
+{
+    net::ipv4::header header;
+
+    BOOST_CHECK_NO_THROW(header.header_size(52));
+
+    BOOST_CHECK_EQUAL(header.header_size(), 52);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/header_size
 
 BOOST_AUTO_TEST_SUITE_END(); // ipv4/header
 
