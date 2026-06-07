@@ -49,6 +49,17 @@ namespace net::ipv4
             return protocol_;
         }
 
+        std::string to_string() const noexcept
+        {
+            std::string string {header_size(), '\0'};
+
+            auto pointer = reinterpret_cast<header*>(string.data());
+
+            *pointer = this;
+
+            return string;
+        }
+
         constexpr int version() const noexcept
         {
             return (version_and_ihl_ & 0b1111'0000) >> 4;
