@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE header
+#define BOOST_TEST_MODULE icmp_header
 
 #define BOOST_TEST_DYN_LINK
 
