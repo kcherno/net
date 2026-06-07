@@ -51,11 +51,11 @@ namespace net::ipv4
 
         std::string to_string() const noexcept
         {
-            std::string string {header_size(), '\0'};
+            std::string string(header_size(), '\0');
 
             auto pointer = reinterpret_cast<header*>(string.data());
 
-            *pointer = this;
+            *pointer = *this;
 
             return string;
         }
