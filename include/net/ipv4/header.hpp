@@ -11,34 +11,28 @@
 
 namespace net::ipv4
 {
-    struct header final
+    class header final
     {
-        std::uint8_t        version_and_ihl;
-        std::uint8_t        type_of_service;
-        std::uint16_t       total_length;
-        std::uint16_t       identification;
-        std::uint16_t       flags_and_fragment_offset;
-        std::uint8_t        time_to_live;
-        protocol_enumerator protocol;
-        std::uint16_t       header_checksum;
-        std::uint32_t       source_address;
-        std::uint32_t       destination_address;
+    public:
 
         static constexpr std::size_t maximum_header_size = 60;
         static constexpr std::size_t minimum_header_size = 20;
 
-        std::uint8_t* data() noexcept
-        {
-            return reinterpret_cast<std::uint8_t*>(this) + header_size();
-        }
-
-        const std::uint8_t* data() const noexcept
-        {
-            return reinterpret_cast<const std::uint8_t*>(this) + header_size();
-        }
-
         static std::optional<std::pair<header, std::string>> from_data(
             std::string_view);
+
+        constexpr header() noexcept :
+            version_and_ihl_           {0b0100'0101},
+            type_of_service_           {},
+            total_length_              {},
+            identification_            {},
+            flags_and_fragment_offset_ {},
+            time_to_live_              {},
+            protocol_                  {},
+            header_checksum_           {},
+            source_address_            {},
+            destination_address_       {}
+        {}
 
         constexpr bool has_options() const noexcept
         {
@@ -47,17 +41,30 @@ namespace net::ipv4
 
         constexpr std::size_t header_size() const noexcept
         {
-            return (version_and_ihl & 0b0000'1111) * 4;
+            return (version_and_ihl_ & 0b0000'1111) * 4;
         }
 
-        constexpr std::size_t size() const noexcept
+        constexpr protocol_enumerator protocol() const noexcept
         {
-            return total_length - header_size();
+            return protocol_;
         }
 
         constexpr int version() const noexcept
         {
-            return (version_and_ihl & 0b1111'0000) >> 4;
+            return (version_and_ihl_ & 0b1111'0000) >> 4;
         }
+
+    private:
+
+        std::uint8_t        version_and_ihl_;
+        std::uint8_t        type_of_service_;
+        std::uint16_t       total_length_;
+        std::uint16_t       identification_;
+        std::uint16_t       flags_and_fragment_offset_;
+        std::uint8_t        time_to_live_;
+        protocol_enumerator protocol_;
+        std::uint16_t       header_checksum_;
+        std::uint32_t       source_address_;
+        std::uint32_t       destination_address_;
     };
 }
