@@ -85,12 +85,52 @@ BOOST_AUTO_TEST_CASE(valid_size)
 {
     net::ipv4::header header;
 
+    BOOST_CHECK_EQUAL(header.header_size(), header.minimum_header_size);
+    BOOST_CHECK_EQUAL(header.packet_size(), header.minimum_header_size);
+
     BOOST_CHECK_NO_THROW(header.header_size(52));
 
     BOOST_CHECK_EQUAL(header.header_size(), 52);
+    BOOST_CHECK_EQUAL(header.packet_size(), 52);
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/header_size
+
+BOOST_AUTO_TEST_SUITE(packet_size);
+
+BOOST_AUTO_TEST_CASE(invalid_size)
+{
+    net::ipv4::header header;
+
+    BOOST_CHECK_EXCEPTION(
+        header.packet_size(0), std::invalid_argument, [](auto&& exception)
+        {
+            return std::string_view(exception.what()) ==
+                "packet_size: size must be greater than header_size()";
+        }
+    );
+}
+
+BOOST_AUTO_TEST_CASE(valid_size)
+{
+    net::ipv4::header header;
+
+    BOOST_CHECK_EQUAL(header.packet_size(), 20);
+
+    header.packet_size(header.header_size() + 8);
+
+    BOOST_CHECK_EQUAL(header.packet_size(), 28);
+
+    header.packet_size(header.header_size() + 4);
+
+    BOOST_CHECK_EQUAL(header.packet_size(), 24);
+
+    header.header_size(60);
+
+    BOOST_CHECK_EQUAL(header.packet_size(), 64);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // ipv4/header/packet_size
 
 BOOST_AUTO_TEST_SUITE_END(); // ipv4/header
 

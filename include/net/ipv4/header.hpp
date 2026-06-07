@@ -9,7 +9,9 @@
 
 #include <cstdint>
 
+#include "net/to_network_byte_order.hpp"
 #include "net/protocol_enumerator.hpp"
+#include "net/to_host_byte_order.hpp"
 
 namespace net::ipv4
 {
@@ -26,7 +28,13 @@ namespace net::ipv4
         constexpr header() noexcept :
             version_and_ihl_           {0b0100'0101},
             type_of_service_           {},
-            total_length_              {},
+
+            total_length_              {
+                to_network_byte_order(static_cast<std::uint16_t>(
+                    (version_and_ihl_ & 0b0000'1111) * 4)
+                )
+            },
+
             identification_            {},
             flags_and_fragment_offset_ {},
             time_to_live_              {},
@@ -46,28 +54,27 @@ namespace net::ipv4
             return (version_and_ihl_ & 0b0000'1111) * 4;
         }
 
-        header& header_size(std::size_t size)
+        header& header_size(std::size_t size);
+
+        constexpr std::size_t packet_size() const noexcept
         {
-            if (size < minimum_header_size || size > maximum_header_size)
+            return to_host_byte_order(total_length_);
+        }
+
+        header& packet_size(std::size_t size)
+        {
+            if (size < header_size())
             {
                 throw std::invalid_argument {
                     std::format(
-                        "{}: size must be in the range from {} to {}",
-                        __func__,
-                        minimum_header_size,
-                        maximum_header_size
+                        "{}: size must be greater than header_size()",
+                        __func__
                     )
                 };
             }
 
-            if (size % 4 != 0)
-            {
-                throw std::invalid_argument {
-                    std::format("{}: size must be a multiple of 4", __func__)
-                };
-            }
-
-            version_and_ihl_ = 0b0100'1111 & (size / 4);
+            total_length_ = to_network_byte_order(static_cast<std::uint16_t>(
+                size));
 
             return *this;
         }

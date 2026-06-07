@@ -1,6 +1,8 @@
 #include <string_view>
+#include <stdexcept>
 #include <optional>
 #include <utility>
+#include <format>
 #include <string>
 
 #include "net/ipv4/header.hpp"
@@ -16,48 +18,43 @@ net::ipv4::header::from_data(std::string_view data)
 
         if (pointer->version() == 4)
         {
-            header header {
-                .version_and_ihl =
-                    pointer->version_and_ihl,
 
-                .type_of_service =
-                    pointer->type_of_service,
-
-                .total_length = to_host_byte_order(
-                    pointer->total_length),
-
-                .identification = to_host_byte_order(
-                    pointer->identification),
-
-                .flags_and_fragment_offset = to_host_byte_order(
-                    pointer->flags_and_fragment_offset),
-
-                .time_to_live =
-                    pointer->time_to_live,
-
-                .protocol =
-                    pointer->protocol,
-
-                .header_checksum = to_host_byte_order(
-                    pointer->header_checksum),
-
-                .source_address = to_host_byte_order(
-                    pointer->source_address),
-
-                .destination_address = to_host_byte_order(
-                    pointer->destination_address)
-            };
-
-            return std::pair {
-                header,
-
-                std::string {
-                    reinterpret_cast<const char*>(header.data()),
-                    header.size()
-                }
-            };
         }
     }
 
     return std::nullopt;
+}
+
+net::ipv4::header& net::ipv4::header::header_size(std::size_t size)
+{
+    if (size < minimum_header_size || size > maximum_header_size)
+    {
+        throw std::invalid_argument {
+            std::format(
+                "{}: size must be in the range from {} to {}",
+                __func__,
+                minimum_header_size,
+                maximum_header_size
+            )
+        };
+    }
+
+    if (size % 4 != 0)
+    {
+        throw std::invalid_argument {
+            std::format("{}: size must be a multiple of 4", __func__)
+        };
+    }
+
+    const auto before = header_size();
+
+    version_and_ihl_ = 0b0100'1111 & (size / 4);
+
+    const auto after = header_size();
+
+    packet_size(before < after ?
+        packet_size() - before + after :
+        packet_size() - after  + before);
+
+    return *this;
 }
