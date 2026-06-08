@@ -72,9 +72,8 @@ BOOST_AUTO_TEST_CASE(ip_header_with_data)
     ip_header.protocol(net::protocol_enumerator::icmp);
 
     const net::ipv4::icmp::header icmp_header {
-        .type     = net::ipv4::icmp::header::type_enumerator::echo,
-        .code     = {},
-        .checksum = {},
+        .type = net::ipv4::icmp::header::type_enumerator::echo,
+        .code = {},
 
         .echo_message {
             .identifier      = 1,
@@ -107,9 +106,8 @@ BOOST_AUTO_TEST_SUITE_END(); // icmp/header
 BOOST_AUTO_TEST_CASE(make_icmp_echo_message)
 {
     constexpr net::ipv4::icmp::header header {
-        .type     = net::ipv4::icmp::header::type_enumerator::echo,
-        .code     = 0,
-        .checksum = 0,
+        .type = net::ipv4::icmp::header::type_enumerator::echo,
+        .code = 0,
 
         .echo_message {
             .identifier      = 1,
@@ -143,9 +141,8 @@ BOOST_AUTO_TEST_CASE(make_icmp_echo_message)
 BOOST_AUTO_TEST_CASE(make_icmp_echo_reply_message)
 {
     constexpr net::ipv4::icmp::header header {
-        .type     = net::ipv4::icmp::header::type_enumerator::echo_reply,
-        .code     = 0,
-        .checksum = 0,
+        .type = net::ipv4::icmp::header::type_enumerator::echo_reply,
+        .code = 0,
 
         .echo_message {
             .identifier      = 1,

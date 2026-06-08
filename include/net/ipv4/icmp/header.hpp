@@ -19,7 +19,7 @@ namespace net::ipv4::icmp
 
         type_enumerator type;
         std::uint8_t    code;
-        std::uint16_t   checksum;
+        std::uint16_t   checksum = {};
 
         union
         {
