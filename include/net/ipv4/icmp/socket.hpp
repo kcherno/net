@@ -12,7 +12,7 @@
 
 namespace net::ipv4::icmp
 {
-    class socket final : public generic::basic_datagram_socket
+    class socket final : public net::generic::basic_datagram_socket
     {
     public:
 
@@ -20,7 +20,7 @@ namespace net::ipv4::icmp
 
         socket(const socket&) = default;
 
-        socket(const generic::basic_endpoint& endpoint)
+        socket(const net::generic::basic_endpoint& endpoint)
         {
             open();
 
@@ -28,8 +28,8 @@ namespace net::ipv4::icmp
         }
 
         socket(
-            std::error_code&               error,
-            const generic::basic_endpoint& endpoint) noexcept
+            std::error_code&                    error,
+            const net::generic::basic_endpoint& endpoint) noexcept
         {
             if (open(error); error)
             {
@@ -41,16 +41,17 @@ namespace net::ipv4::icmp
 
         socket(socket&& other) noexcept(
             std::is_nothrow_move_constructible_v<
-                generic::basic_datagram_socket>) :
-                    generic::basic_datagram_socket {std::move(other)}
+                net::generic::basic_datagram_socket>) :
+                    net::generic::basic_datagram_socket {std::move(other)}
         {}
 
         socket& operator=(const socket&) = delete;
 
         socket& operator=(socket&& other) noexcept(
-            std::is_nothrow_move_assignable_v<generic::basic_datagram_socket>)
+            std::is_nothrow_move_assignable_v<
+                net::generic::basic_datagram_socket>)
         {
-            generic::basic_datagram_socket::operator=(std::move(other));
+            net::generic::basic_datagram_socket::operator=(std::move(other));
 
             return *this;
         }
