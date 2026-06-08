@@ -1,13 +1,16 @@
 #include <string_view>
 #include <stdexcept>
+#include <optional>
 #include <utility>
 #include <string>
 
 #include "net/ipv4/icmp/header.hpp"
 
 #include "net/ipv4/calculate_checksum.hpp"
+#include "net/ipv4/header.hpp"
 
 #include "net/to_network_byte_order.hpp"
+#include "net/protocol_enumerator.hpp"
 #include "net/to_host_byte_order.hpp"
 
 namespace
@@ -37,32 +40,68 @@ namespace
         return icmp_echo_message;
     }
 
-    std::pair<net::ipv4::icmp::header, std::string> unpack_icmp_echo_message(
-        std::string_view data)
+    std::optional<std::pair<net::ipv4::icmp::header, std::string>>
+    unpack_icmp_echo_message(std::string_view data)
     {
-        auto icmp_header = reinterpret_cast<
-            const net::ipv4::icmp::header*>(data.data());
+        auto pointer = reinterpret_cast<const net::ipv4::icmp::header*>(
+            data.data());
 
-        return std::pair {
-            net::ipv4::icmp::header {
-                .type     = icmp_header->type,
-                .code     = icmp_header->code,
-                .checksum = icmp_header->checksum,
+        return std::optional {
+            std::pair {
+                net::ipv4::icmp::header {
+                    .type     = pointer->type,
+                    .code     = pointer->code,
+                    .checksum = pointer->checksum,
 
-                .echo_message {
-                    .identifier = net::to_host_byte_order(
-                        icmp_header->echo_message.identifier),
+                    .echo_message {
+                        .identifier = net::to_host_byte_order(
+                            pointer->echo_message.identifier),
 
-                    .sequence_number = net::to_host_byte_order(
-                        icmp_header->echo_message.sequence_number)
+                        .sequence_number = net::to_host_byte_order(
+                            pointer->echo_message.sequence_number)
+                    }
+                },
+
+                std::string {
+                    data.substr(pointer->echo_message_header_size)
                 }
-            },
-
-            std::string {
-                data.substr(net::ipv4::icmp::header::echo_message_header_size)
             }
         };
     }
+}
+
+std::optional<std::pair<net::ipv4::icmp::header, std::string>>
+net::ipv4::icmp::header::from_data(std::string_view data)
+{
+    const auto ip_packet = net::ipv4::header::from_data(data);
+
+    if (ip_packet.has_value())
+    {
+        const auto& [ip_header, ip_data] = ip_packet.value();
+
+        if (ip_header.protocol() == protocol_enumerator::icmp)
+        {
+            auto pointer = reinterpret_cast<const header*>(ip_data.data());
+
+            using enum header::type_enumerator;
+
+            switch (pointer->type)
+            {
+                case echo_reply:
+                case echo:
+                {
+                    if (ip_data.size() >= header::echo_message_header_size)
+                    {
+                        return unpack_icmp_echo_message(ip_data);
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
 }
 
 std::string net::ipv4::icmp::make_icmp_message(
@@ -82,39 +121,6 @@ std::string net::ipv4::icmp::make_icmp_message(
         {
             throw std::runtime_error {
                 "make_icmp_message: Undefined net::ipv4::icmp::header::type"
-            };
-        }
-    }
-}
-
-std::pair<net::ipv4::icmp::header, std::string>
-net::ipv4::icmp::unpack_icmp_message(
-    header::type_enumerator type, std::string_view data)
-{
-    using enum header::type_enumerator;
-
-    switch (type)
-    {
-        case echo_reply:
-        case echo:
-        {
-            if (data.size() < header::echo_message_header_size)
-            {
-                throw std::runtime_error {
-                    "unpack_icmp_message: To unpack an echo message, "
-                    "data.size() must be >= "
-                    "net::ipv4::header::echo_message_header_size"
-                };
-            }
-
-            return unpack_icmp_echo_message(data);
-        }
-
-        default:
-        {
-            throw std::runtime_error {
-                "unpack_icmp_message: "
-                "Undefined net::ipv4::icmp::header::type_enumerator"
             };
         }
     }

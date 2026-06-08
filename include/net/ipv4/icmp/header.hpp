@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <optional>
 #include <utility>
 #include <string>
 
@@ -32,10 +33,10 @@ namespace net::ipv4::icmp
         };
 
         inline static constexpr std::size_t echo_message_header_size = 8;
+
+        static std::optional<std::pair<header, std::string>> from_data(
+            std::string_view);
     };
 
     std::string make_icmp_message(const header&, std::string_view);
-
-    std::pair<header, std::string> unpack_icmp_message(
-        header::type_enumerator, std::string_view);
 }
