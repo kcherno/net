@@ -1,5 +1,6 @@
 #pragma once
 
+#include <system_error>
 #include <type_traits>
 #include <utility>
 
@@ -20,29 +21,20 @@ namespace net::ipv4::icmp
 
         socket(const socket&) = default;
 
-        socket(const net::generic::basic_endpoint& endpoint)
-        {
-            open();
-
-            bind(endpoint);
-        }
-
-        socket(
-            std::error_code&                    error,
-            const net::generic::basic_endpoint& endpoint) noexcept
-        {
-            if (open(error); error)
-            {
-                return;
-            }
-
-            bind(error, endpoint);
-        }
-
         socket(socket&& other) noexcept(
             std::is_nothrow_move_constructible_v<
                 net::generic::basic_datagram_socket>) :
                     net::generic::basic_datagram_socket {std::move(other)}
+        {}
+
+        socket(const net::generic::basic_endpoint& endpoint) :
+            net::generic::basic_datagram_socket {endpoint}
+        {}
+
+        socket(
+            std::error_code&                    error,
+            const net::generic::basic_endpoint& endpoint) noexcept :
+                net::generic::basic_datagram_socket {error, endpoint}
         {}
 
         socket& operator=(const socket&) = delete;

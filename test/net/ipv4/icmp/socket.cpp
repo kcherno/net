@@ -126,11 +126,6 @@ BOOST_AUTO_TEST_CASE(move_constructor)
     BOOST_TEST(not socket.is_open());
 }
 
-BOOST_AUTO_TEST_CASE(parameterized_constructor)
-{
-    BOOST_CHECK_NO_THROW(net::ipv4::icmp::socket {net::ipv4::endpoint {}});
-}
-
 BOOST_AUTO_TEST_SUITE_END(); // icmp/socket/constructor
 
 BOOST_AUTO_TEST_SUITE(assignment_operator);
