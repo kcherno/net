@@ -9,4 +9,5 @@ foreach(source_file ${source_files})
 
 endforeach()
 
+add_subdirectory(generic)
 add_subdirectory(ipv4)

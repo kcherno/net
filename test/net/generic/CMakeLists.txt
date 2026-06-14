@@ -1,0 +1,1 @@
+add_boost_unit_test(generic_socket.cpp)
