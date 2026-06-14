@@ -56,6 +56,37 @@ namespace net::generic
             close();
         }
 
+        void connect(const basic_endpoint& endpoint) const
+        {
+            std::error_code error;
+
+            connect(error, endpoint);
+
+            if (error)
+            {
+                throw std::system_error {error, __func__};
+            }
+        }
+
+        void connect(
+            std::error_code&      error,
+            const basic_endpoint& endpoint) const noexcept
+        {
+            if (error_if_socket_is_closed(error))
+            {
+                return;
+            }
+
+            const auto result = ::connect(
+                native_handler(), endpoint.data(), endpoint.size());
+
+            if (result == -1)
+            {
+                error = std::make_error_code(
+                    error::code_enumerator::socket_is_closed);
+            }
+        }
+
         void bind(const basic_endpoint& endpoint) const
         {
             std::error_code error;
