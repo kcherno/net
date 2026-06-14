@@ -212,6 +212,38 @@ namespace net::generic
 
         virtual constexpr int protocol() const noexcept = 0;
 
+        void remote_endpoint(basic_endpoint& endpoint) const
+        {
+            std::error_code error;
+
+            remote_endpoint(error, endpoint);
+
+            if (error)
+            {
+                throw std::system_error {error, __func__};
+            }
+        }
+
+        void remote_endpoint(
+            std::error_code& error,
+            basic_endpoint&  endpoint) const noexcept
+        {
+            if (error_if_socket_is_closed(error))
+            {
+                return;
+            }
+
+            auto endpoint_size = endpoint.size();
+
+            const auto result = ::getpeername(
+                native_handler(), endpoint.data(), &endpoint_size);
+
+            if (result == -1)
+            {
+                error = std::make_error_code(std::errc {errno});
+            }
+        }
+
         virtual constexpr int type() const noexcept = 0;
 
     protected:
