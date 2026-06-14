@@ -59,9 +59,7 @@ namespace net::generic
 
             if (receive_from(error, endpoint, string, flags); error)
             {
-                throw std::system_error {
-                    error, "basic_datagram_socket::receive_from"
-                };
+                throw std::system_error {error, __func__};
             }
         }
 
@@ -71,31 +69,33 @@ namespace net::generic
             std::string&     string,
             int              flags = 0) noexcept
         {
-            if (not is_open())
+            if (error_if_socket_is_closed(error))
             {
-                error = std::make_error_code(std::errc::bad_file_descriptor);
-
                 return;
             }
 
+            const auto string_size_before_receiving = string.size();
+
+            string.resize(string.capacity());
+
             auto endpoint_size = endpoint.size();
 
-            const auto receive_bytes = ::recvfrom(
+            const auto received_bytes = ::recvfrom(
                 native_handler(),
                 string.data(),
                 string.capacity(),
                 flags,
                 endpoint.data(),
-                &endpoint_size);
+                &endpoint_size
+            );
 
-            if (receive_bytes == -1)
+            if (received_bytes == -1)
             {
                 error = std::make_error_code(std::errc {errno});
-
-                return;
             }
 
-            string.resize(receive_bytes);
+            string.resize(received_bytes == -1 ?
+                string_size_before_receiving : received_bytes);
         }
 
         void send_to(
@@ -107,9 +107,7 @@ namespace net::generic
 
             if (send_to(error, endpoint, string, flags); error)
             {
-                throw std::system_error {
-                    error, "basic_datagram_socket::send_to"
-                };
+                throw std::system_error {error, __func__};
             }
         }
 
@@ -119,10 +117,8 @@ namespace net::generic
             std::string_view      string,
             int                   flags = 0) noexcept
         {
-            if (not is_open())
+            if (error_if_socket_is_closed(error))
             {
-                error = std::make_error_code(std::errc::bad_file_descriptor);
-
                 return;
             }
 
@@ -132,7 +128,8 @@ namespace net::generic
                 string.size(),
                 flags,
                 endpoint.data(),
-                endpoint.size());
+                endpoint.size()
+            );
 
             if (sent_bytes == -1)
             {
