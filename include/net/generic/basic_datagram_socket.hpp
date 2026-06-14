@@ -50,10 +50,48 @@ namespace net::generic
 
         virtual ~basic_datagram_socket() = default;
 
+        void receive(std::string& string, int flags = 0) const
+        {
+            std::error_code error;
+
+            receive(error, string, flags);
+
+            if (error)
+            {
+                throw std::system_error {error, __func__};
+            }
+        }
+
+        void receive(
+            std::error_code& error,
+            std::string&     string,
+            int              flags = 0) const noexcept
+        {
+            if (error_if_socket_is_closed(error))
+            {
+                return;
+            }
+
+            const auto string_size_before_receiving = string.size();
+
+            string.resize(string.capacity());
+
+            const auto received_bytes = ::recv(
+                native_handler(), string.data(), string.capacity(), flags);
+
+            if (received_bytes == -1)
+            {
+                error = std::make_error_code(std::errc {errno});
+            }
+
+            string.resize(received_bytes == -1 ?
+                string_size_before_receiving : received_bytes);
+        }
+
         void receive_from(
             basic_endpoint& endpoint,
             std::string&    string,
-            int             flags = 0)
+            int             flags = 0) const
         {
             std::error_code error;
 
@@ -67,7 +105,7 @@ namespace net::generic
             std::error_code& error,
             basic_endpoint&  endpoint,
             std::string&     string,
-            int              flags = 0) noexcept
+            int              flags = 0) const noexcept
         {
             if (error_if_socket_is_closed(error))
             {
@@ -101,7 +139,7 @@ namespace net::generic
         void send_to(
             const basic_endpoint& endpoint,
             std::string_view      string,
-            int                   flags = 0)
+            int                   flags = 0) const
         {
             std::error_code error;
 
@@ -115,7 +153,7 @@ namespace net::generic
             std::error_code&      error,
             const basic_endpoint& endpoint,
             std::string_view      string,
-            int                   flags = 0) noexcept
+            int                   flags = 0) const noexcept
         {
             if (error_if_socket_is_closed(error))
             {
