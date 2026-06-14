@@ -136,6 +136,37 @@ namespace net::generic
                 string_size_before_receiving : received_bytes);
         }
 
+        void send(std::string_view string, int flags = 0) const
+        {
+            std::error_code error;
+
+            send(error, string, flags);
+
+            if (error)
+            {
+                throw std::system_error {error, __func__};
+            }
+        }
+
+        void send(
+            std::error_code& error,
+            std::string_view string,
+            int              flags = 0) const noexcept
+        {
+            if (error_if_socket_is_closed(error))
+            {
+                return;
+            }
+
+            const auto sent_bytes = ::send(
+                native_handler(), string.data(), string.size(), flags);
+
+            if (sent_bytes == -1)
+            {
+                error = std::make_error_code(std::errc {errno});
+            }
+        }
+
         void send_to(
             const basic_endpoint& endpoint,
             std::string_view      string,
