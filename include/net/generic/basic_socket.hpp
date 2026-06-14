@@ -13,6 +13,8 @@
 
 #include <unistd.h>
 
+#include "net/error/error.hpp"
+
 #include "basic_endpoint.hpp"
 
 namespace net::generic
@@ -58,9 +60,11 @@ namespace net::generic
         {
             std::error_code error;
 
-            if (bind(error, endpoint); error)
+            bind(error, endpoint);
+
+            if (error)
             {
-                throw std::system_error {error, "basic_socket::bind"};
+                throw std::system_error {error, __func__};
             }
         }
 
@@ -68,11 +72,8 @@ namespace net::generic
             std::error_code&      error,
             const basic_endpoint& endpoint) const noexcept
         {
-            if (not is_open())
+            if (error_if_socket_is_closed(error))
             {
-                error = std::make_error_code(
-                    std::errc::bad_file_descriptor);
-
                 return;
             }
 
@@ -90,9 +91,9 @@ namespace net::generic
             if (is_open())
             {
                 ::close(socket_.value());
-
-                socket_.reset();
             }
+
+            socket_.reset();
         }
 
         virtual constexpr int domain() const noexcept = 0;
@@ -101,9 +102,11 @@ namespace net::generic
         {
             std::error_code error;
 
-            if (this->endpoint(error, endpoint); error)
+            this->endpoint(error, endpoint);
+
+            if (error)
             {
-                throw std::system_error {error, "basic_socket::endpoint"};
+                throw std::system_error {error, __func__};
             }
         }
 
@@ -111,11 +114,8 @@ namespace net::generic
             std::error_code& error,
             basic_endpoint&  endpoint) const noexcept
         {
-            if (not is_open())
+            if (error_if_socket_is_closed(error))
             {
-                error = std::make_error_code(
-                    std::errc::bad_file_descriptor);
-
                 return;
             }
 
@@ -137,24 +137,27 @@ namespace net::generic
 
         const native_handler_type& native_handler() const
         {
-            if (not is_open())
+            if (is_open())
             {
-                throw std::system_error {
-                    std::make_error_code(std::errc::bad_file_descriptor),
-                    "basic_socket::native_handler"
-                };
+                return socket_.value();
             }
 
-            return socket_.value();
+            throw std::system_error {
+                std::make_error_code(
+                    net::error::code_enumerator::socket_is_closed),
+                __func__
+            };
         }
 
         void open()
         {
             std::error_code error;
 
-            if (open(error); error)
+            open(error);
+
+            if (error)
             {
-                throw std::system_error {error, "basic_socket::open"};
+                throw std::system_error {error, __func__};
             }
         }
 
@@ -179,6 +182,19 @@ namespace net::generic
         virtual constexpr int protocol() const noexcept = 0;
 
         virtual constexpr int type() const noexcept = 0;
+
+    protected:
+
+        bool error_if_socket_is_closed(std::error_code& error) const noexcept
+        {
+            if (not is_open())
+            {
+                error = std::make_error_code(
+                    error::code_enumerator::socket_is_closed);
+            }
+
+            return static_cast<bool>(error);
+        }
 
     private:
 

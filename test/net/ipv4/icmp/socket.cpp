@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::bind: Bad file descriptor";
+                "bind: socket is closed";
         });
 
     BOOST_CHECK_NO_THROW(socket.close());
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::endpoint: Bad file descriptor";
+                "endpoint: socket is closed";
         });
 
     BOOST_TEST(not socket.is_open());
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::native_handler: Bad file descriptor";
+                "native_handler: socket is closed";
         });
 
     BOOST_CHECK_NO_THROW(socket.open());
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::bind: Bad file descriptor";
+                "bind: socket is closed";
         });
 
     BOOST_CHECK_NO_THROW(const_socket.close());
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::endpoint: Bad file descriptor";
+                "endpoint: socket is closed";
         });
 
     BOOST_TEST(not const_socket.is_open());
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
         [](const auto& exception)
         {
             return std::string_view(exception.what()) ==
-                "basic_socket::native_handler: Bad file descriptor";
+                "native_handler: socket is closed";
         });
 
     BOOST_CHECK_NO_THROW(const_socket.open());
