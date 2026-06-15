@@ -9,7 +9,8 @@
 #include <sys/socket.h>
 
 #include "net/generic/basic_datagram_socket.hpp"
-#include "net/generic/basic_endpoint.hpp"
+
+#include "net/ipv4/endpoint.hpp"
 
 namespace net::ipv4::icmp
 {
@@ -27,15 +28,24 @@ namespace net::ipv4::icmp
                     net::generic::basic_datagram_socket {std::move(other)}
         {}
 
-        socket(const net::generic::basic_endpoint& endpoint) :
-            net::generic::basic_datagram_socket {endpoint}
-        {}
+        socket(const ipv4::endpoint& endpoint)
+        {
+            open();
 
-        socket(
-            std::error_code&                    error,
-            const net::generic::basic_endpoint& endpoint) noexcept :
-                net::generic::basic_datagram_socket {error, endpoint}
-        {}
+            connect(endpoint);
+        }
+
+        socket(std::error_code& error, const ipv4::endpoint& endpoint) noexcept
+        {
+            open(error);
+
+            if (error)
+            {
+                return;
+            }
+
+            connect(error, endpoint);
+        }
 
         socket& operator=(const socket&) = delete;
 

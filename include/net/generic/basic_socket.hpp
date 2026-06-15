@@ -37,26 +37,6 @@ namespace net::generic
             other.socket_.reset();
         }
 
-        basic_socket(const basic_endpoint& endpoint)
-        {
-            open();
-
-            connect(endpoint);
-        }
-
-        basic_socket(
-            std::error_code& error, const basic_endpoint& endpoint) noexcept
-        {
-            open(error);
-
-            if (error)
-            {
-                return;
-            }
-
-            connect(error, endpoint);
-        }
-
         basic_socket& operator=(const basic_socket&) = delete;
 
         basic_socket& operator=(basic_socket&& other) noexcept(
