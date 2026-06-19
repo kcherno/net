@@ -1,6 +1,6 @@
 make_net_unit_test(calculate_checksum.cpp)
+make_net_unit_test(ip_v4_endpoint.cpp)
 make_net_unit_test(ip_header.cpp)
-make_net_unit_test(endpoint.cpp)
 
 target_sources(calculate_checksum
     PRIVATE ${PROJECT_SOURCE_DIR}/src/net/ipv4/calculate_checksum.cpp)
