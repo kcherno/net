@@ -27,6 +27,24 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     net::ipv4::icmp::socket socket;
 
     BOOST_CHECK_EXCEPTION(
+        socket.connect(net::ipv4::endpoint {}),
+        std::system_error,
+        [](const auto& exception)
+        {
+#ifdef NET_DEBUG_MODE__
+
+            return std::string_view(exception.what()) ==
+                "connect: socket is closed";
+
+#else
+
+            return std::string_view(exception.what()) == "socket is closed";
+
+#endif
+        }
+    );
+
+    BOOST_CHECK_EXCEPTION(
         socket.bind(net::ipv4::endpoint {}),
         std::system_error,
         [](const auto& exception)
@@ -41,7 +59,8 @@ BOOST_AUTO_TEST_CASE(default_constructor)
             return std::string_view(exception.what()) == "socket is closed";
 
 #endif
-        });
+        }
+    );
 
     BOOST_CHECK_NO_THROW(socket.close());
 
@@ -64,7 +83,8 @@ BOOST_AUTO_TEST_CASE(default_constructor)
             return std::string_view(exception.what()) == "socket is closed";
 
 #endif
-        });
+        }
+    );
 
     BOOST_TEST(not socket.is_open());
 
@@ -83,11 +103,28 @@ BOOST_AUTO_TEST_CASE(default_constructor)
             return std::string_view(exception.what()) == "socket is closed";
 
 #endif
-        });
-
-    BOOST_CHECK_NO_THROW(socket.open());
+        }
+    );
 
     BOOST_CHECK_EQUAL(socket.protocol(), IPPROTO_ICMP);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.remote_endpoint(endpoint),
+        std::system_error,
+        [](const auto& exception)
+        {
+#ifdef NET_DEBUG_MODE__
+
+            return std::string_view(exception.what()) ==
+                "remote_endpoint: socket is closed";
+
+#else
+
+            return std::string_view(exception.what()) == "socket is closed";
+
+#endif
+        }
+    );
 
     BOOST_CHECK_EQUAL(socket.type(), SOCK_RAW);
 }
@@ -107,6 +144,11 @@ BOOST_AUTO_TEST_CASE(move_constructor)
     BOOST_TEST(socket_2.is_open());
 
     BOOST_TEST(not socket_1.is_open());
+}
+
+BOOST_AUTO_TEST_CASE(parameterized_constructor)
+{
+
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // icmp/socket/constructor
