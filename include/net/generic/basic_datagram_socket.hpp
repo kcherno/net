@@ -10,6 +10,8 @@
 
 #include <sys/socket.h>
 
+#include "net/debug/throw_exception.hpp"
+
 #include "basic_endpoint.hpp"
 #include "basic_socket.hpp"
 
@@ -47,10 +49,7 @@ namespace net::generic
 
             receive(error, string, flags);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void receive(
@@ -86,10 +85,9 @@ namespace net::generic
         {
             std::error_code error;
 
-            if (receive_from(error, endpoint, string, flags); error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            receive_from(error, endpoint, string, flags);
+
+            debug::throw_exception(error, __func__);
         }
 
         void receive_from(
@@ -133,10 +131,7 @@ namespace net::generic
 
             send(error, string, flags);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void send(
@@ -165,10 +160,9 @@ namespace net::generic
         {
             std::error_code error;
 
-            if (send_to(error, endpoint, string, flags); error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            send_to(error, endpoint, string, flags);
+
+            debug::throw_exception(error, __func__);
         }
 
         void send_to(

@@ -10,6 +10,12 @@ function(add_boost_unit_test source_file)
 
     add_test(NAME ${filename} COMMAND ${filename} ${boost_unit_test_options})
 
+    if (enable_net_debug_mode)
+
+        target_compile_definitions(${filename} PRIVATE NET_DEBUG_MODE__)
+
+    endif()
+
     target_compile_features(${filename} PRIVATE cxx_std_23)
 
     target_link_libraries(${filename} PRIVATE Boost::unit_test_framework)

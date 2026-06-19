@@ -13,6 +13,8 @@
 
 #include <unistd.h>
 
+#include "net/debug/throw_exception.hpp"
+
 #include "net/error/error.hpp"
 
 #include "basic_endpoint.hpp"
@@ -62,10 +64,7 @@ namespace net::generic
 
             connect(error, endpoint);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void connect(
@@ -93,10 +92,7 @@ namespace net::generic
 
             bind(error, endpoint);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void bind(
@@ -135,10 +131,7 @@ namespace net::generic
 
             this->endpoint(error, endpoint);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void endpoint(
@@ -168,16 +161,14 @@ namespace net::generic
 
         const native_handler_type& native_handler() const
         {
-            if (is_open())
+            std::error_code error;
+
+            if (error_if_socket_is_closed(error))
             {
-                return socket_.value();
+                debug::throw_exception(error, __func__);
             }
 
-            throw std::system_error {
-                std::make_error_code(
-                    net::error::code_enumerator::socket_is_closed),
-                __func__
-            };
+            return socket_.value();
         }
 
         void open()
@@ -186,10 +177,7 @@ namespace net::generic
 
             open(error);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void open(std::error_code& error) noexcept
@@ -218,10 +206,7 @@ namespace net::generic
 
             remote_endpoint(error, endpoint);
 
-            if (error)
-            {
-                throw std::system_error {error, __func__};
-            }
+            debug::throw_exception(error, __func__);
         }
 
         void remote_endpoint(
