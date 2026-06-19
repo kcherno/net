@@ -1,5 +1,5 @@
-add_boost_unit_test(icmp_header.cpp)
-add_boost_unit_test(icmp_socket.cpp)
+make_net_unit_test(icmp_header.cpp)
+make_net_unit_test(icmp_socket.cpp)
 
 target_sources(icmp_header
     PRIVATE ${PROJECT_SOURCE_DIR}/src/net/ipv4/icmp/header.cpp

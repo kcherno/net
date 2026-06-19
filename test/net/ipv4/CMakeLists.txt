@@ -1,10 +1,6 @@
-set(source_files calculate_checksum.cpp endpoint.cpp ip_header.cpp)
-
-foreach(source_file ${source_files})
-
-    add_boost_unit_test(${source_file})
-
-endforeach()
+make_net_unit_test(calculate_checksum.cpp)
+make_net_unit_test(ip_header.cpp)
+make_net_unit_test(endpoint.cpp)
 
 target_sources(calculate_checksum
     PRIVATE ${PROJECT_SOURCE_DIR}/src/net/ipv4/calculate_checksum.cpp)
