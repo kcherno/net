@@ -82,7 +82,7 @@ namespace net::generic
             if (result == -1)
             {
                 error = std::make_error_code(
-                    error::code_enumerator::socket_is_closed);
+                    error_code_enumerator::socket_is_closed);
             }
         }
 
@@ -238,7 +238,7 @@ namespace net::generic
             if (not is_open())
             {
                 error = std::make_error_code(
-                    error::code_enumerator::socket_is_closed);
+                    error_code_enumerator::socket_is_closed);
             }
 
             return static_cast<bool>(error);

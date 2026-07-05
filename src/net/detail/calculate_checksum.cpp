@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-#include "net/ipv4/calculate_checksum.hpp"
+#include "net/detail/calculate_checksum.hpp"
 
-std::uint16_t net::ipv4::calculate_checksum(std::string_view string) noexcept
+std::uint16_t net::detail::calculate_checksum(std::string_view string) noexcept
 {
     std::uint32_t checksum = 0;
 

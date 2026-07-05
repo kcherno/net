@@ -4,7 +4,7 @@
 
 namespace net::debug
 {
-    void throw_exception(
+    inline void throw_exception(
         const std::error_code& error, [[maybe_unused]] const char* where)
     {
         if (error)

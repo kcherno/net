@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace net::ipv4
+namespace net::detail
 {
     std::uint16_t calculate_checksum(std::string_view) noexcept;
 }

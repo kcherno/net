@@ -3,7 +3,7 @@
 #include <concepts>
 #include <bit>
 
-namespace net
+namespace net::detail
 {
     inline constexpr auto to_network_byte_order(
         std::unsigned_integral auto number) noexcept

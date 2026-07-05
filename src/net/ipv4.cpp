@@ -5,9 +5,9 @@
 #include <format>
 #include <string>
 
-#include "net/ipv4/header.hpp"
+#include "net/detail/to_host_byte_order.hpp"
 
-#include "net/to_host_byte_order.hpp"
+#include "net/ipv4.hpp"
 
 std::optional<std::pair<net::ipv4::header, std::string>>
 net::ipv4::header::from_data(std::string_view data)
@@ -59,7 +59,8 @@ net::ipv4::header& net::ipv4::header::header_size(std::size_t size)
 
     packet_size(before < after ?
         packet_size() - before + after :
-        packet_size() - after  + before);
+        packet_size() - after  + before
+    );
 
     return *this;
 }
