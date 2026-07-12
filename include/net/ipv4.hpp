@@ -5,7 +5,9 @@
 #include <stdexcept>
 #include <optional>
 #include <utility>
+#include <format>
 #include <string>
+#include <array>
 
 #include <cstdint>
 
