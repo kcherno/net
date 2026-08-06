@@ -12,36 +12,45 @@
 
 #include "net/debug/throw_exception.hpp"
 
-#include "basic_endpoint.hpp"
 #include "basic_socket.hpp"
 
 namespace net::generic
 {
-    class basic_datagram_socket : public basic_socket
+    template<name_requirement::Protocol T>
+    class basic_datagram_socket final : public basic_socket<T>
     {
     public:
+
+        using endpoint_type = typename basic_socket<T>::endpoint_type;
 
         basic_datagram_socket() = default;
 
         basic_datagram_socket(const basic_datagram_socket&) = delete;
 
         basic_datagram_socket(basic_datagram_socket&& other) noexcept(
-            std::is_nothrow_move_constructible_v<basic_socket>) :
-                basic_socket {std::move(other)}
+            std::is_nothrow_move_constructible_v<basic_socket<T>>) :
+                basic_socket<T> {std::move(other)}
+        {}
+
+        basic_datagram_socket(const endpoint_type& endpoint) :
+            basic_socket<T> {endpoint}
+        {}
+
+        basic_datagram_socket(
+            std::error_code& error, const endpoint_type& endpoint) noexcept :
+                basic_socket<T> {error, endpoint}
         {}
 
         basic_datagram_socket& operator=(
             const basic_datagram_socket&) = delete;
 
         basic_datagram_socket& operator=(basic_datagram_socket&& other)
-            noexcept(std::is_nothrow_move_assignable_v<basic_socket>)
+            noexcept(std::is_nothrow_move_assignable_v<basic_socket<T>>)
         {
-            basic_socket::operator=(std::move(other));
+            basic_socket<T>::operator=(std::move(other));
 
             return *this;
         }
-
-        virtual ~basic_datagram_socket() = default;
 
         void receive(std::string& string, int flags = 0) const
         {
@@ -57,7 +66,7 @@ namespace net::generic
             std::string&     string,
             int              flags = 0) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (basic_socket<T>::error_if_socket_is_closed(error))
             {
                 return;
             }
@@ -67,7 +76,11 @@ namespace net::generic
             string.resize(string.capacity());
 
             const auto received_bytes = ::recv(
-                native_handler(), string.data(), string.capacity(), flags);
+                basic_socket<T>::native_handler(),
+                string.data(),
+                string.capacity(),
+                flags
+            );
 
             if (received_bytes == -1)
             {
@@ -79,9 +92,9 @@ namespace net::generic
         }
 
         void receive_from(
-            basic_endpoint& endpoint,
-            std::string&    string,
-            int             flags = 0) const
+            endpoint_type& endpoint,
+            std::string&   string,
+            int            flags = 0) const
         {
             std::error_code error;
 
@@ -92,11 +105,11 @@ namespace net::generic
 
         void receive_from(
             std::error_code& error,
-            basic_endpoint&  endpoint,
+            endpoint_type&   endpoint,
             std::string&     string,
             int              flags = 0) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (basic_socket<T>::error_if_socket_is_closed(error))
             {
                 return;
             }
@@ -108,7 +121,7 @@ namespace net::generic
             auto endpoint_size = endpoint.size();
 
             const auto received_bytes = ::recvfrom(
-                native_handler(),
+                basic_socket<T>::native_handler(),
                 string.data(),
                 string.capacity(),
                 flags,
@@ -139,13 +152,17 @@ namespace net::generic
             std::string_view string,
             int              flags = 0) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (basic_socket<T>::error_if_socket_is_closed(error))
             {
                 return;
             }
 
             const auto sent_bytes = ::send(
-                native_handler(), string.data(), string.size(), flags);
+                basic_socket<T>::native_handler(),
+                string.data(),
+                string.size(),
+                flags
+            );
 
             if (sent_bytes == -1)
             {
@@ -154,9 +171,9 @@ namespace net::generic
         }
 
         void send_to(
-            const basic_endpoint& endpoint,
-            std::string_view      string,
-            int                   flags = 0) const
+            const endpoint_type& endpoint,
+            std::string_view     string,
+            int                  flags = 0) const
         {
             std::error_code error;
 
@@ -166,18 +183,18 @@ namespace net::generic
         }
 
         void send_to(
-            std::error_code&      error,
-            const basic_endpoint& endpoint,
-            std::string_view      string,
-            int                   flags = 0) const noexcept
+            std::error_code&     error,
+            const endpoint_type& endpoint,
+            std::string_view     string,
+            int                  flags = 0) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (basic_socket<T>::error_if_socket_is_closed(error))
             {
                 return;
             }
 
             const auto sent_bytes = ::sendto(
-                native_handler(),
+                basic_socket<T>::native_handler(),
                 string.data(),
                 string.size(),
                 flags,
@@ -189,11 +206,6 @@ namespace net::generic
             {
                 error = std::make_error_code(std::errc {errno});
             }
-        }
-
-        constexpr int type() const noexcept override
-        {
-            return SOCK_DGRAM;
         }
     };
 }

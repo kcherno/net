@@ -15,19 +15,22 @@
 
 #include "net/debug/throw_exception.hpp"
 
-#include "net/error/error.hpp"
+#include "net/detail/make_error_code.hpp"
 
-#include "basic_endpoint.hpp"
+#include "net/name_requirement/protocol.hpp"
+
+#include "net/protocol_enumerator.hpp"
 
 namespace net::generic
 {
+    template<name_requirement::Protocol T>
     class basic_socket
     {
     public:
 
+        using domain_type         = typename T::domain_type;
+        using endpoint_type       = typename domain_type::endpoint;
         using native_handler_type = int;
-
-        basic_socket() = default;
 
         basic_socket(const basic_socket&) = delete;
 
@@ -37,6 +40,24 @@ namespace net::generic
                     socket_ {std::move(other.socket_)}
         {
             other.socket_.reset();
+        }
+
+        basic_socket(const endpoint_type& endpoint)
+        {
+            open();
+
+            connect(endpoint);
+        }
+
+        basic_socket(
+            std::error_code& error, const endpoint_type& endpoint) noexcept
+        {
+            if (open(error); error)
+            {
+                return;
+            }
+
+            connect(error, endpoint);
         }
 
         basic_socket& operator=(const basic_socket&) = delete;
@@ -53,40 +74,12 @@ namespace net::generic
             return *this;
         }
 
-        virtual ~basic_socket()
+        ~basic_socket()
         {
             close();
         }
 
-        void connect(const basic_endpoint& endpoint) const
-        {
-            std::error_code error;
-
-            connect(error, endpoint);
-
-            debug::throw_exception(error, __func__);
-        }
-
-        void connect(
-            std::error_code&      error,
-            const basic_endpoint& endpoint) const noexcept
-        {
-            if (error_if_socket_is_closed(error))
-            {
-                return;
-            }
-
-            const auto result = ::connect(
-                native_handler(), endpoint.data(), endpoint.size());
-
-            if (result == -1)
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
-            }
-        }
-
-        void bind(const basic_endpoint& endpoint) const
+        void bind(const endpoint_type& endpoint) const
         {
             std::error_code error;
 
@@ -96,20 +89,48 @@ namespace net::generic
         }
 
         void bind(
-            std::error_code&      error,
-            const basic_endpoint& endpoint) const noexcept
+            std::error_code&     error,
+            const endpoint_type& endpoint) const noexcept
         {
             if (error_if_socket_is_closed(error))
             {
                 return;
             }
 
-            const auto result = ::bind(
-                native_handler(), endpoint.data(), endpoint.size());
+            const int result = ::bind(
+                socket_.value(), endpoint.data(), endpoint.size());
 
             if (result == -1)
             {
                 error = std::make_error_code(std::errc {errno});
+            }
+        }
+
+        void connect(const endpoint_type& endpoint) const
+        {
+            std::error_code error;
+
+            connect(error, endpoint);
+
+            debug::throw_exception(error, __func__);
+        }
+
+        void connect(
+            std::error_code&     error,
+            const endpoint_type& endpoint) const noexcept
+        {
+            if (error_if_socket_is_closed(error))
+            {
+                return;
+            }
+
+            const int result = ::connect(
+                socket_.value(), endpoint.data(), endpoint.size());
+
+            if (result == -1)
+            {
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
             }
         }
 
@@ -123,9 +144,38 @@ namespace net::generic
             socket_.reset();
         }
 
-        virtual constexpr int domain() const noexcept = 0;
+        constexpr int domain() const noexcept
+        {
+            return domain_type::domain();
+        }
 
-        void endpoint(basic_endpoint& endpoint) const
+        endpoint_type endpoint() const
+        {
+            endpoint_type endpoint;
+
+            this->endpoint(endpoint);
+
+            return endpoint;
+        }
+
+        std::optional<endpoint_type>
+        endpoint(std::error_code& error) const noexcept
+        {
+            std::optional<endpoint_type> optional_endpoint {
+                endpoint_type {}
+            };
+
+            endpoint(error, optional_endpoint.value());
+
+            if (error)
+            {
+                optional_endpoint.reset();
+            }
+
+            return optional_endpoint;
+        }
+
+        void endpoint(endpoint_type& endpoint) const
         {
             std::error_code error;
 
@@ -135,8 +185,7 @@ namespace net::generic
         }
 
         void endpoint(
-            std::error_code& error,
-            basic_endpoint&  endpoint) const noexcept
+            std::error_code& error, endpoint_type& endpoint) const noexcept
         {
             if (error_if_socket_is_closed(error))
             {
@@ -145,7 +194,7 @@ namespace net::generic
 
             auto endpoint_size = endpoint.size();
 
-            const auto result = ::getsockname(
+            const int result = ::getsockname(
                 native_handler(), endpoint.data(), &endpoint_size);
 
             if (result == -1)
@@ -182,8 +231,11 @@ namespace net::generic
 
         void open(std::error_code& error) noexcept
         {
-            const auto socket = ::socket(
-                domain(), type() | SOCK_CLOEXEC, protocol());
+            const native_handler_type socket = ::socket(
+                domain(),
+                type() | SOCK_CLOEXEC,
+                static_cast<int>(protocol())
+            );
 
             if (socket == -1)
             {
@@ -198,9 +250,38 @@ namespace net::generic
             }
         }
 
-        virtual constexpr int protocol() const noexcept = 0;
+        constexpr protocol_enumerator protocol() const noexcept
+        {
+            return T::protocol();
+        }
 
-        void remote_endpoint(basic_endpoint& endpoint) const
+        endpoint_type remote_endpoint() const
+        {
+            endpoint_type remote_endpoint;
+
+            this->remote_endpoint(remote_endpoint);
+
+            return remote_endpoint;
+        }
+
+        std::optional<endpoint_type>
+        remote_endpoint(std::error_code& error) const noexcept
+        {
+            std::optional<endpoint_type> optional_remote_endpoint {
+                endpoint_type {}
+            };
+
+            remote_endpoint(error, optional_remote_endpoint.value());
+
+            if (error)
+            {
+                optional_remote_endpoint.reset();
+            }
+
+            return optional_remote_endpoint;
+        }
+
+        void remote_endpoint(endpoint_type& endpoint) const
         {
             std::error_code error;
 
@@ -210,8 +291,7 @@ namespace net::generic
         }
 
         void remote_endpoint(
-            std::error_code& error,
-            basic_endpoint&  endpoint) const noexcept
+            std::error_code& error, endpoint_type& endpoint) const noexcept
         {
             if (error_if_socket_is_closed(error))
             {
@@ -220,7 +300,7 @@ namespace net::generic
 
             auto endpoint_size = endpoint.size();
 
-            const auto result = ::getpeername(
+            const int result = ::getpeername(
                 native_handler(), endpoint.data(), &endpoint_size);
 
             if (result == -1)
@@ -229,9 +309,14 @@ namespace net::generic
             }
         }
 
-        virtual constexpr int type() const noexcept = 0;
+        constexpr int type() const noexcept
+        {
+            return T::type();
+        }
 
     protected:
+
+        basic_socket() = default;
 
         bool error_if_socket_is_closed(std::error_code& error) const noexcept
         {
