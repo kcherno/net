@@ -42,12 +42,12 @@ namespace net
 
             constexpr endpoint() noexcept :
                 address_ {
-                    .sin_family =
-                        static_cast<decltype(address_.sin_family)>(domain()),
+                    .sin_family = static_cast<decltype(address_.sin_family)>(
+                        domain()),
 
-                    .sin_port   = 0,
-                    .sin_addr   = 0,
-                    .sin_zero   = 0
+                    .sin_port = 0,
+                    .sin_addr = 0,
+                    .sin_zero = 0
                 }
             {}
 
@@ -62,9 +62,8 @@ namespace net
             endpoint(
                 std::error_code& error,
                 std::string_view address,
-                port_type        port = {}
-            ) noexcept :
-                endpoint {}
+                port_type        port = {}) noexcept :
+                    endpoint {}
             {
                 if (this->address(error, address); error)
                 {
@@ -147,8 +146,8 @@ namespace net
             static constexpr std::size_t maximum_header_size = 60;
             static constexpr std::size_t minimum_header_size = 20;
 
-            static std::optional<std::pair<header, std::string>> from_data(
-                std::string_view);
+            static std::optional<std::pair<header, std::string>>
+            from_data(std::string_view);
 
             constexpr header() noexcept :
                 version_and_ihl_ {0b0100'0101},
@@ -244,6 +243,8 @@ namespace net
             std::uint32_t       source_address_;
             std::uint32_t       destination_address_;
         };
+
+        inline static const endpoint loopback {"127.0.0.1", 0};
 
         ipv4() = delete;
 
