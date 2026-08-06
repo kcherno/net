@@ -2,6 +2,7 @@
 
 #include <system_error>
 #include <string_view>
+#include <type_traits>
 #include <stdexcept>
 #include <optional>
 #include <utility>
@@ -34,7 +35,7 @@ namespace net
     {
     public:
 
-        class endpoint final : public generic::basic_endpoint
+        class endpoint final : public generic::basic_endpoint<endpoint>
         {
         public:
 
@@ -109,14 +110,24 @@ namespace net
                 }
             }
 
-            native_handler_type* data() noexcept override
+            auto data(this auto&& self) noexcept
             {
-                return reinterpret_cast<native_handler_type*>(&address_);
-            }
+                using native_handler_type =
+                    basic_endpoint<endpoint>::native_handler_type;
 
-            const native_handler_type* data() const noexcept override
-            {
-                return reinterpret_cast<const native_handler_type*>(&address_);
+                using self_type = std::remove_reference_t<decltype(self)>;
+
+                if constexpr (std::is_const_v<self_type>)
+                {
+                    return reinterpret_cast<const native_handler_type*>(&(
+                        self.address_));
+                }
+
+                else
+                {
+                    return reinterpret_cast<native_handler_type*>(&(
+                        self.address_));
+                }
             }
 
             constexpr port_type port() const noexcept
@@ -129,7 +140,7 @@ namespace net
                 address_.sin_port = detail::to_network_byte_order(port);
             }
 
-            constexpr size_type size() const noexcept override
+            consteval size_type size() const noexcept
             {
                 return sizeof(address_);
             }

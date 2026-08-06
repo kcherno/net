@@ -4,6 +4,7 @@
 
 namespace net::generic
 {
+    template<typename T>
     class basic_endpoint
     {
     public:
@@ -11,12 +12,18 @@ namespace net::generic
         using native_handler_type = ::sockaddr;
         using size_type           = ::socklen_t;
 
-        virtual ~basic_endpoint() = default;
+        auto data(this auto&& self) noexcept
+        {
+            return self.data();
+        }
 
-        virtual native_handler_type* data() noexcept = 0;
+        consteval auto size(this auto&& self) noexcept
+        {
+            return self.size();
+        }
 
-        virtual const native_handler_type* data() const noexcept = 0;
+    protected:
 
-        virtual constexpr size_type size() const noexcept = 0;
+        basic_endpoint() = default;
     };
 }
