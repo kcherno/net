@@ -132,8 +132,7 @@ namespace net::generic
 
             if (result == -1)
             {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                error = std::make_error_code(error_code_enumerator {errno});
             }
         }
 
