@@ -1,5 +1,6 @@
 #pragma once
 
+#include <source_location>
 #include <system_error>
 #include <type_traits>
 #include <stdexcept>
@@ -85,7 +86,8 @@ namespace net::generic
 
             bind(error, endpoint);
 
-            debug::throw_exception(error, __func__);
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
         }
 
         void bind(
@@ -112,7 +114,8 @@ namespace net::generic
 
             connect(error, endpoint);
 
-            debug::throw_exception(error, __func__);
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
         }
 
         void connect(
@@ -181,7 +184,8 @@ namespace net::generic
 
             this->endpoint(error, endpoint);
 
-            debug::throw_exception(error, __func__);
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
         }
 
         void endpoint(
@@ -214,7 +218,8 @@ namespace net::generic
 
             if (error_if_socket_is_closed(error))
             {
-                debug::throw_exception(error, __func__);
+                debug::throw_exception(
+                    error, std::source_location::current().function_name());
             }
 
             return socket_.value();
@@ -226,7 +231,8 @@ namespace net::generic
 
             open(error);
 
-            debug::throw_exception(error, __func__);
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
         }
 
         void open(std::error_code& error) noexcept
@@ -287,7 +293,8 @@ namespace net::generic
 
             remote_endpoint(error, endpoint);
 
-            debug::throw_exception(error, __func__);
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
         }
 
         void remote_endpoint(
