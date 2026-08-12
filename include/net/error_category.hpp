@@ -32,9 +32,17 @@ namespace net
 
             switch (error_code_enumerator {code})
             {
-                case success:              return "success";
-                case invalid_ipv4_address: return "invalid ipv4 address";
-                case socket_is_closed:     return "socket is closed";
+                case success:
+                    return "success";
+
+                case connection_refused:
+                    return "no socket is listening on the target address";
+
+                case invalid_ipv4_address:
+                    return "invalid ipv4 address";
+
+                case socket_is_closed:
+                    return "socket is closed";
             }
 
             return "undefined error";
