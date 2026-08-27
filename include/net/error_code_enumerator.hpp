@@ -9,10 +9,11 @@ namespace net
 {
     enum class error_code_enumerator
     {
-        success            = 0,
-        connection_refused = ECONNREFUSED,
+        address_is_already_in_use = EADDRINUSE,
+        connection_refused        = ECONNREFUSED,
         invalid_ipv4_address,
-        socket_is_closed   = EBADF
+        socket_is_closed          = EBADF,
+        success                   = 0
     };
 }
 

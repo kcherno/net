@@ -32,8 +32,8 @@ namespace net
 
             switch (error_code_enumerator {code})
             {
-                case success:
-                    return "success";
+                case address_is_already_in_use:
+                    return "address is already in use";
 
                 case connection_refused:
                     return "no socket is listening on the target address";
@@ -43,6 +43,9 @@ namespace net
 
                 case socket_is_closed:
                     return "socket is closed";
+
+                case success:
+                    return "success";
             }
 
             return "undefined error";
