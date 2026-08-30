@@ -44,6 +44,9 @@ namespace net
                 case socket_is_closed:
                     return "socket is closed";
 
+                case socket_is_not_connected:
+                    return "socket is not connected";
+
                 case success:
                     return "success";
             }
