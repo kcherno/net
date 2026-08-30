@@ -41,6 +41,9 @@ namespace net
                 case invalid_ipv4_address:
                     return "invalid ipv4 address";
 
+                case socket_is_already_bound:
+                    return "socket is already bound";
+
                 case socket_is_closed:
                     return "socket is closed";
 
