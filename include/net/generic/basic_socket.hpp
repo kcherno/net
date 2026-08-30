@@ -29,8 +29,9 @@ namespace net::generic
     {
     public:
 
-        using domain_type         = typename T::domain_type;
-        using endpoint_type       = typename domain_type::endpoint;
+        using protocol_type       = T;
+        using domain_type         = protocol_type::domain_type;
+        using endpoint_type       = domain_type::endpoint;
         using native_handler_type = int;
 
         basic_socket(const basic_socket&) = delete;
@@ -94,17 +95,27 @@ namespace net::generic
             std::error_code&     error,
             const endpoint_type& endpoint) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (is_open())
             {
-                return;
+                const int result = ::bind(
+                    socket_.value(), endpoint.data(), endpoint.size());
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+                }
+
+                else
+                {
+                    error.clear();
+                }
             }
 
-            const int result = ::bind(
-                socket_.value(), endpoint.data(), endpoint.size());
-
-            if (result == -1)
+            else
             {
-                error = std::make_error_code(std::errc {errno});
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
             }
         }
 
@@ -122,17 +133,27 @@ namespace net::generic
             std::error_code&     error,
             const endpoint_type& endpoint) const noexcept
         {
-            if (error_if_socket_is_closed(error))
+            if (is_open())
             {
-                return;
+                const int result = ::connect(
+                    socket_.value(), endpoint.data(), endpoint.size());
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+                }
+
+                else
+                {
+                    error.clear();
+                }
             }
 
-            const int result = ::connect(
-                socket_.value(), endpoint.data(), endpoint.size());
-
-            if (result == -1)
+            else
             {
-                error = std::make_error_code(error_code_enumerator {errno});
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
             }
         }
 
@@ -146,64 +167,55 @@ namespace net::generic
             socket_.reset();
         }
 
-        constexpr int domain() const noexcept
+        static constexpr int domain() noexcept
         {
             return domain_type::domain();
         }
 
         endpoint_type endpoint() const
         {
-            endpoint_type endpoint;
+            std::error_code error;
 
-            this->endpoint(endpoint);
+            auto result = endpoint(error);
 
-            return endpoint;
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return result.value();
         }
 
         std::optional<endpoint_type>
         endpoint(std::error_code& error) const noexcept
         {
-            std::optional<endpoint_type> optional_endpoint {
-                endpoint_type {}
-            };
-
-            endpoint(error, optional_endpoint.value());
-
-            if (error)
+            if (is_open())
             {
-                optional_endpoint.reset();
+                endpoint_type endpoint;
+
+                auto size = endpoint.size();
+
+                const auto result = ::getsockname(
+                    socket_.value(), endpoint.data(), &size);
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+
+                    return std::nullopt;
+                }
+
+                else
+                {
+                    error.clear();
+
+                    return endpoint;
+                }
             }
 
-            return optional_endpoint;
-        }
+            error = std::make_error_code(
+                error_code_enumerator::socket_is_closed);
 
-        void endpoint(endpoint_type& endpoint) const
-        {
-            std::error_code error;
-
-            this->endpoint(error, endpoint);
-
-            debug::throw_exception(
-                error, std::source_location::current().function_name());
-        }
-
-        void endpoint(
-            std::error_code& error, endpoint_type& endpoint) const noexcept
-        {
-            if (error_if_socket_is_closed(error))
-            {
-                return;
-            }
-
-            auto endpoint_size = endpoint.size();
-
-            const int result = ::getsockname(
-                native_handler(), endpoint.data(), &endpoint_size);
-
-            if (result == -1)
-            {
-                error = std::make_error_code(std::errc {errno});
-            }
+            return std::nullopt;
         }
 
         constexpr bool is_open() const noexcept
@@ -213,12 +225,13 @@ namespace net::generic
 
         const native_handler_type& native_handler() const
         {
-            std::error_code error;
-
-            if (error_if_socket_is_closed(error))
+            if (not is_open())
             {
                 debug::throw_exception(
-                    error, std::source_location::current().function_name());
+                    std::make_error_code(
+                        error_code_enumerator::socket_is_closed),
+                    std::source_location::current().function_name()
+                );
             }
 
             return socket_.value();
@@ -249,91 +262,73 @@ namespace net::generic
 
             else
             {
+                error.clear();
+
                 close();
 
                 socket_ = socket;
             }
         }
 
-        constexpr protocol_enumerator protocol() const noexcept
+        static constexpr protocol_enumerator protocol() noexcept
         {
-            return T::protocol();
+            return protocol_type::protocol();
         }
 
         endpoint_type remote_endpoint() const
         {
-            endpoint_type remote_endpoint;
+            std::error_code error;
 
-            this->remote_endpoint(remote_endpoint);
+            auto result = remote_endpoint(error);
 
-            return remote_endpoint;
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return result.value();
         }
 
         std::optional<endpoint_type>
         remote_endpoint(std::error_code& error) const noexcept
         {
-            std::optional<endpoint_type> optional_remote_endpoint {
-                endpoint_type {}
-            };
-
-            remote_endpoint(error, optional_remote_endpoint.value());
-
-            if (error)
+            if (is_open())
             {
-                optional_remote_endpoint.reset();
+                endpoint_type endpoint;
+
+                auto size = endpoint.size();
+
+                const auto result = ::getpeername(
+                    socket_.value(), endpoint.data(), &size);
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+
+                    return std::nullopt;
+                }
+
+                else
+                {
+                    error.clear();
+
+                    return endpoint;
+                }
             }
 
-            return optional_remote_endpoint;
+            error = std::make_error_code(
+                error_code_enumerator::socket_is_closed);
+
+            return std::nullopt;
         }
 
-        void remote_endpoint(endpoint_type& endpoint) const
+        static constexpr int type() noexcept
         {
-            std::error_code error;
-
-            remote_endpoint(error, endpoint);
-
-            debug::throw_exception(
-                error, std::source_location::current().function_name());
-        }
-
-        void remote_endpoint(
-            std::error_code& error, endpoint_type& endpoint) const noexcept
-        {
-            if (error_if_socket_is_closed(error))
-            {
-                return;
-            }
-
-            auto endpoint_size = endpoint.size();
-
-            const int result = ::getpeername(
-                native_handler(), endpoint.data(), &endpoint_size);
-
-            if (result == -1)
-            {
-                error = std::make_error_code(std::errc {errno});
-            }
-        }
-
-        constexpr int type() const noexcept
-        {
-            return T::type();
+            return protocol_type::type();
         }
 
     protected:
 
         basic_socket() = default;
-
-        bool error_if_socket_is_closed(std::error_code& error) const noexcept
-        {
-            if (not is_open())
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
-            }
-
-            return static_cast<bool>(error);
-        }
 
     private:
 
