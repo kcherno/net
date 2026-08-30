@@ -81,7 +81,7 @@ namespace net::generic
             close();
         }
 
-        void bind(const endpoint_type& endpoint) const
+        void bind(const endpoint_type& endpoint)
         {
             std::error_code error;
 
@@ -92,23 +92,33 @@ namespace net::generic
         }
 
         void bind(
-            std::error_code&     error,
-            const endpoint_type& endpoint) const noexcept
+            std::error_code& error, const endpoint_type& endpoint) noexcept
         {
             if (is_open())
             {
-                const int result = ::bind(
-                    socket_.value(), endpoint.data(), endpoint.size());
-
-                if (result == -1)
+                if (is_bound())
                 {
                     error = std::make_error_code(
-                        error_code_enumerator {errno});
+                        error_code_enumerator::socket_is_already_bound);
                 }
 
                 else
                 {
-                    error.clear();
+                    const int result = ::bind(
+                        socket_.value(), endpoint.data(), endpoint.size());
+
+                    if (result == -1)
+                    {
+                        error = std::make_error_code(
+                            error_code_enumerator {errno});
+                    }
+
+                    else
+                    {
+                        error.clear();
+
+                        is_bound_ = true;
+                    }
                 }
             }
 
@@ -165,6 +175,8 @@ namespace net::generic
             }
 
             socket_.reset();
+
+            is_bound_ = false;
         }
 
         static constexpr int domain() noexcept
@@ -216,6 +228,11 @@ namespace net::generic
                 error_code_enumerator::socket_is_closed);
 
             return std::nullopt;
+        }
+
+        constexpr bool is_bound() const noexcept
+        {
+            return is_bound_;
         }
 
         constexpr bool is_open() const noexcept
@@ -328,10 +345,14 @@ namespace net::generic
 
     protected:
 
-        basic_socket() = default;
+        constexpr basic_socket() noexcept :
+            socket_   {},
+            is_bound_ {false}
+        {}
 
     private:
 
         std::optional<native_handler_type> socket_;
+        bool                               is_bound_;
     };
 }
