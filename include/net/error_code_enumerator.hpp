@@ -10,6 +10,7 @@ namespace net
     enum class error_code_enumerator
     {
         address_is_already_in_use = EADDRINUSE,
+        broken_pipe               = EPIPE,
         connection_refused        = ECONNREFUSED,
         invalid_ipv4_address,
         socket_is_already_bound,

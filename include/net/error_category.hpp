@@ -35,6 +35,9 @@ namespace net
                 case address_is_already_in_use:
                     return "address is already in use";
 
+                case broken_pipe:
+                    return "broken pipe";
+
                 case connection_refused:
                     return "no socket is listening on the target address";
 
