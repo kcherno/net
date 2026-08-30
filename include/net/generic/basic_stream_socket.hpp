@@ -8,7 +8,11 @@
 
 #include "net/debug/throw_exception.hpp"
 
+#include "net/detail/make_error_code.hpp"
+
 #include "net/name_requirement/protocol.hpp"
+
+#include "net/error_code_enumerator.hpp"
 
 #include "basic_socket.hpp"
 
@@ -20,6 +24,9 @@ namespace net::generic
     public:
 
         using endpoint_type = typename basic_socket<T>::endpoint_type;
+
+        using basic_socket<T>::is_open;
+        using basic_socket<T>::native_handler;
 
         basic_stream_socket() = default;
 
@@ -64,29 +71,35 @@ namespace net::generic
             std::string&     string,
             int              flags = 0) const noexcept
         {
-            if (basic_socket<T>::error_if_socket_is_closed(error))
+            if (is_open())
             {
-                return;
+                const auto string_size_before_receiving = string.size();
+
+                string.resize(string.capacity());
+
+                const auto received_bytes = ::recv(
+                    native_handler(), string.data(), string.capacity(), flags);
+
+                if (received_bytes == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+                }
+
+                else
+                {
+                    error.clear();
+                }
+
+                string.resize(received_bytes == -1 ?
+                    string_size_before_receiving : received_bytes);
             }
 
-            const auto string_size_before_receiving = string.size();
-
-            string.resize(string.capacity());
-
-            const auto received_bytes = ::recv(
-                basic_socket<T>::native_handler(),
-                string.data(),
-                string.capacity(),
-                flags
-            );
-
-            if (received_bytes == -1)
+            else
             {
-                error = std::make_error_code(std::errc {errno});
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
             }
-
-            string.resize(received_bytes == -1 ?
-                string_size_before_receiving : received_bytes);
         }
 
         void send(std::string_view string, int flags = 0) const
@@ -104,21 +117,27 @@ namespace net::generic
             std::string_view string,
             int              flags = 0) const noexcept
         {
-            if (basic_socket<T>::error_if_socket_is_closed(error))
+            if (is_open())
             {
-                return;
+                const auto sent_bytes = ::send(
+                    native_handler(), string.data(), string.size(), flags);
+
+                if (sent_bytes == -1)
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator {errno});
+                }
+
+                else
+                {
+                    error.clear();
+                }
             }
 
-            const auto sent_bytes = ::send(
-                basic_socket<T>::native_handler(),
-                string.data(),
-                string.size(),
-                flags
-            );
-
-            if (sent_bytes == -1)
+            else
             {
-                error = std::make_error_code(std::errc {errno});
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
             }
         }
     };
