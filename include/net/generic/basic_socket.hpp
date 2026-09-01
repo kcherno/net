@@ -37,11 +37,10 @@ namespace net::generic
         basic_socket(const basic_socket&) = delete;
 
         basic_socket(basic_socket&& other) noexcept(
-            std::is_nothrow_move_constructible_v<
-                std::optional<native_handler_type>>) :
-                    socket_ {std::move(other.socket_)}
+            std::is_nothrow_move_assignable_v<basic_socket>) :
+                basic_socket {}
         {
-            other.socket_.reset();
+            this->operator=(std::move(other));
         }
 
         basic_socket(const endpoint_type& endpoint)
@@ -70,7 +69,8 @@ namespace net::generic
         {
             if (this != &other)
             {
-                std::swap(socket_, other.socket_);
+                std::swap(socket_,   other.socket_);
+                std::swap(is_bound_, other.is_bound_);
             }
 
             return *this;
