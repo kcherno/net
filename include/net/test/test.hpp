@@ -68,14 +68,7 @@ namespace net::test
             .ends_with("socket is not connected");
     }
 
-    inline constexpr bool remote_endpoint_through_closed_socket(
-        const std::exception& exception) noexcept
-    {
-        return std::string_view(exception.what())
-            .ends_with("socket is closed");
-    }
-
-    inline constexpr bool remote_endpoint_through_non_connected_socket(
+    inline constexpr bool get_remote_endpoint_through_non_connected_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
