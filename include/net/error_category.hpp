@@ -47,6 +47,9 @@ namespace net
                 case socket_is_already_bound:
                     return "socket is already bound";
 
+                case socket_is_already_connected:
+                    return "socket is already connected";
+
                 case socket_is_closed:
                     return "socket is closed";
 
