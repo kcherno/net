@@ -94,6 +94,8 @@ BOOST_AUTO_TEST_CASE(default_constructor)
 
     BOOST_TEST(not socket.is_bound());
 
+    BOOST_TEST(not socket.is_connected());
+
     BOOST_TEST(not socket.is_open());
 
     BOOST_CHECK_EXCEPTION(
@@ -107,7 +109,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::remote_endpoint_through_closed_socket
+        net::test::get_remote_endpoint_through_non_connected_socket
     );
 
     {
@@ -415,7 +417,7 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::remote_endpoint_through_closed_socket
+        net::test::get_remote_endpoint_through_non_connected_socket
     );
 
     std::error_code error;
@@ -429,7 +431,7 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_non_connected_socket
     );
 
     BOOST_CHECK_NO_THROW(socket.remote_endpoint(error));
