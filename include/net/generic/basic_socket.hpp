@@ -69,8 +69,9 @@ namespace net::generic
         {
             if (this != &other)
             {
-                std::swap(endpoint_, other.endpoint_);
-                std::swap(socket_,   other.socket_);
+                std::swap(endpoint_,        other.endpoint_);
+                std::swap(remote_endpoint_, other.remote_endpoint_);
+                std::swap(socket_,          other.socket_);
             }
 
             return *this;
@@ -131,7 +132,7 @@ namespace net::generic
             }
         }
 
-        void connect(const endpoint_type& endpoint) const
+        void connect(const endpoint_type& endpoint)
         {
             std::error_code error;
 
@@ -143,22 +144,35 @@ namespace net::generic
 
         void connect(
             std::error_code&     error,
-            const endpoint_type& endpoint) const noexcept
+            const endpoint_type& endpoint) noexcept(
+                std::is_nothrow_assignable_v<
+                    std::optional<endpoint_type>, endpoint_type>)
         {
             if (is_open())
             {
-                const int result = ::connect(
-                    socket_.value(), endpoint.data(), endpoint.size());
-
-                if (result == -1)
+                if (is_connected())
                 {
                     error = std::make_error_code(
-                        error_code_enumerator {errno});
+                        error_code_enumerator::socket_is_already_connected);
                 }
 
                 else
                 {
-                    error.clear();
+                    const int result = ::connect(
+                        socket_.value(), endpoint.data(), endpoint.size());
+
+                    if (result == -1)
+                    {
+                        error = std::make_error_code(
+                            error_code_enumerator {errno});
+                    }
+
+                    else
+                    {
+                        remote_endpoint_ = endpoint;
+
+                        error.clear();
+                    }
                 }
             }
 
@@ -177,6 +191,8 @@ namespace net::generic
             }
 
             endpoint_.reset();
+
+            remote_endpoint_.reset();
 
             socket_.reset();
         }
@@ -220,6 +236,11 @@ namespace net::generic
         constexpr bool is_bound() const noexcept
         {
             return endpoint_.has_value();
+        }
+
+        constexpr bool is_connected() const noexcept
+        {
+            return remote_endpoint_.has_value();
         }
 
         constexpr bool is_open() const noexcept
@@ -279,50 +300,35 @@ namespace net::generic
             return protocol_type::protocol();
         }
 
-        endpoint_type remote_endpoint() const
+        const endpoint_type& remote_endpoint() const &
         {
-            std::error_code error;
-
-            auto result = remote_endpoint(error);
-
-            debug::throw_exception(
-                error, std::source_location::current().function_name());
-
-            return result.value();
-        }
-
-        std::optional<endpoint_type>
-        remote_endpoint(std::error_code& error) const noexcept
-        {
-            if (is_open())
+            if (not is_connected())
             {
-                endpoint_type endpoint;
+                const auto error = std::make_error_code(
+                    error_code_enumerator::socket_is_not_connected);
 
-                auto size = endpoint.size();
-
-                const auto result = ::getpeername(
-                    socket_.value(), endpoint.data(), &size);
-
-                if (result == -1)
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator {errno});
-
-                    return std::nullopt;
-                }
-
-                else
-                {
-                    error.clear();
-
-                    return endpoint;
-                }
+                debug::throw_exception(
+                    error, std::source_location::current().function_name());
             }
 
-            error = std::make_error_code(
-                error_code_enumerator::socket_is_closed);
+            return remote_endpoint_.value();
+        }
 
-            return std::nullopt;
+        const std::optional<endpoint_type>&
+        remote_endpoint(std::error_code& error) const & noexcept
+        {
+            if (is_connected())
+            {
+                error.clear();
+            }
+
+            else
+            {
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_not_connected);
+            }
+
+            return remote_endpoint_;
         }
 
         static constexpr int type() noexcept
@@ -337,6 +343,7 @@ namespace net::generic
     private:
 
         std::optional<endpoint_type>       endpoint_;
+        std::optional<endpoint_type>       remote_endpoint_;
         std::optional<native_handler_type> socket_;
     };
 }
