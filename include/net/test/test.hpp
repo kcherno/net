@@ -40,11 +40,11 @@ namespace net::test
             .ends_with("no socket is listening on the target address");
     }
 
-    inline constexpr bool
-    endpoint_through_closed_socket(const std::exception& exception) noexcept
+    inline constexpr bool get_endpoint_through_unbound_socket(
+        const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
-            .ends_with("socket is closed");
+            .ends_with("socket is not bound");
     }
 
     inline constexpr bool native_handler_through_closed_socket(

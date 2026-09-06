@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         socket.endpoint(),
         std::system_error,
-        net::test::endpoint_through_closed_socket
+        net::test::get_endpoint_through_unbound_socket
     );
 
     {
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.endpoint(),
         std::system_error,
-        net::test::endpoint_through_closed_socket
+        net::test::get_endpoint_through_unbound_socket
     );
 
     std::error_code error;
@@ -296,6 +296,8 @@ BOOST_AUTO_TEST_CASE(endpoint)
     BOOST_TEST(error);
 
     BOOST_REQUIRE_NO_THROW(socket.open());
+
+    BOOST_REQUIRE_NO_THROW(socket.bind(net::ipv4::loopback));
 
     BOOST_CHECK_NO_THROW(socket.endpoint());
 
