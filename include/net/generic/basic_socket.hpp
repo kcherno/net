@@ -248,7 +248,7 @@ namespace net::generic
             return socket_.has_value();
         }
 
-        const native_handle_type& native_handle() const
+        const native_handle_type& native_handle() const &
         {
             if (not is_open())
             {
@@ -260,6 +260,23 @@ namespace net::generic
             }
 
             return socket_.value();
+        }
+
+        const std::optional<native_handle_type>&
+        native_handle(std::error_code& error) const & noexcept
+        {
+            if (is_open())
+            {
+                error.clear();
+            }
+
+            else
+            {
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
+            }
+
+            return socket_;
         }
 
         void open()

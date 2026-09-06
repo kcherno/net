@@ -348,9 +348,17 @@ BOOST_AUTO_TEST_CASE(native_handle)
         net::test::native_handle_through_closed_socket
     );
 
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.native_handle(error));
+
+    BOOST_TEST(error);
+
     BOOST_REQUIRE_NO_THROW(socket.open());
 
-    BOOST_CHECK_NO_THROW(socket.native_handle());
+    BOOST_CHECK_NO_THROW(socket.native_handle(error));
+
+    BOOST_TEST(not error);
 }
 
 BOOST_AUTO_TEST_CASE(open)
