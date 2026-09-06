@@ -163,9 +163,9 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_TEST(not socket.is_open());
 
     BOOST_CHECK_EXCEPTION(
-        socket.native_handler(),
+        socket.native_handle(),
         std::system_error,
-        net::test::native_handler_through_closed_socket
+        net::test::native_handle_through_closed_socket
     );
 
     BOOST_CHECK_EQUAL(socket.protocol(), net::icmp::protocol());
@@ -462,19 +462,19 @@ BOOST_AUTO_TEST_CASE(is_open)
     BOOST_TEST(not socket.is_open());
 }
 
-BOOST_AUTO_TEST_CASE(native_handler)
+BOOST_AUTO_TEST_CASE(native_handle)
 {
     net::icmp::socket socket;
 
     BOOST_CHECK_EXCEPTION(
-        socket.native_handler(),
+        socket.native_handle(),
         std::system_error,
-        net::test::native_handler_through_closed_socket
+        net::test::native_handle_through_closed_socket
     );
 
     BOOST_REQUIRE_NO_THROW(socket.open());
 
-    BOOST_REQUIRE_NO_THROW(socket.native_handler());
+    BOOST_REQUIRE_NO_THROW(socket.native_handle());
 }
 
 BOOST_AUTO_TEST_CASE(open)

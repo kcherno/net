@@ -9,8 +9,8 @@ namespace net::generic
     {
     public:
 
-        using native_handler_type = ::sockaddr;
-        using size_type           = ::socklen_t;
+        using native_handle_type = ::sockaddr;
+        using size_type          = ::socklen_t;
 
         auto data(this auto&& self) noexcept
         {

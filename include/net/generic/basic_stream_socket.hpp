@@ -26,7 +26,7 @@ namespace net::generic
         using endpoint_type = typename basic_socket<T>::endpoint_type;
 
         using basic_socket<T>::is_open;
-        using basic_socket<T>::native_handler;
+        using basic_socket<T>::native_handle;
 
         basic_stream_socket() = default;
 
@@ -78,7 +78,7 @@ namespace net::generic
                 string.resize(string.capacity());
 
                 const auto received_bytes = ::recv(
-                    native_handler(), string.data(), string.capacity(), flags);
+                    native_handle(), string.data(), string.capacity(), flags);
 
                 if (received_bytes == -1)
                 {
@@ -120,7 +120,7 @@ namespace net::generic
             if (is_open())
             {
                 const auto sent_bytes = ::send(
-                    native_handler(), string.data(), string.size(), flags);
+                    native_handle(), string.data(), string.size(), flags);
 
                 if (sent_bytes == -1)
                 {

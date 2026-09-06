@@ -47,7 +47,7 @@ namespace net::test
             .ends_with("socket is not bound");
     }
 
-    inline constexpr bool native_handler_through_closed_socket(
+    inline constexpr bool native_handle_through_closed_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())

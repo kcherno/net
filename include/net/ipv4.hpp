@@ -112,20 +112,20 @@ namespace net
 
             auto data(this auto&& self) noexcept
             {
-                using native_handler_type =
-                    basic_endpoint<endpoint>::native_handler_type;
+                using native_handle_type =
+                    basic_endpoint<endpoint>::native_handle_type;
 
                 using self_type = std::remove_reference_t<decltype(self)>;
 
                 if constexpr (std::is_const_v<self_type>)
                 {
-                    return reinterpret_cast<const native_handler_type*>(&(
+                    return reinterpret_cast<const native_handle_type*>(&(
                         self.address_));
                 }
 
                 else
                 {
-                    return reinterpret_cast<native_handler_type*>(&(
+                    return reinterpret_cast<native_handle_type*>(&(
                         self.address_));
                 }
             }

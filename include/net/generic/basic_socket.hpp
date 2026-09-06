@@ -32,7 +32,7 @@ namespace net::generic
         using protocol_type       = T;
         using domain_type         = protocol_type::domain_type;
         using endpoint_type       = domain_type::endpoint;
-        using native_handler_type = int;
+        using native_handle_type = int;
 
         basic_socket(const basic_socket&) = delete;
 
@@ -65,7 +65,7 @@ namespace net::generic
 
         basic_socket& operator=(basic_socket&& other) noexcept(
             std::is_nothrow_swappable_v<std::optional<endpoint_type>> &&
-            std::is_nothrow_swappable_v<std::optional<native_handler_type>>)
+            std::is_nothrow_swappable_v<std::optional<native_handle_type>>)
         {
             if (this != &other)
             {
@@ -248,7 +248,7 @@ namespace net::generic
             return socket_.has_value();
         }
 
-        const native_handler_type& native_handler() const
+        const native_handle_type& native_handle() const
         {
             if (not is_open())
             {
@@ -274,7 +274,7 @@ namespace net::generic
 
         void open(std::error_code& error) noexcept
         {
-            const native_handler_type socket = ::socket(
+            const native_handle_type socket = ::socket(
                 domain(),
                 type() | SOCK_CLOEXEC,
                 static_cast<int>(protocol())
@@ -342,8 +342,8 @@ namespace net::generic
 
     private:
 
-        std::optional<endpoint_type>       endpoint_;
-        std::optional<endpoint_type>       remote_endpoint_;
-        std::optional<native_handler_type> socket_;
+        std::optional<endpoint_type>      endpoint_;
+        std::optional<endpoint_type>      remote_endpoint_;
+        std::optional<native_handle_type> socket_;
     };
 }

@@ -76,7 +76,7 @@ namespace net::generic
             string.resize(string.capacity());
 
             const auto received_bytes = ::recv(
-                basic_socket<T>::native_handler(),
+                basic_socket<T>::native_handle(),
                 string.data(),
                 string.capacity(),
                 flags
@@ -121,7 +121,7 @@ namespace net::generic
             auto endpoint_size = endpoint.size();
 
             const auto received_bytes = ::recvfrom(
-                basic_socket<T>::native_handler(),
+                basic_socket<T>::native_handle(),
                 string.data(),
                 string.capacity(),
                 flags,
@@ -158,7 +158,7 @@ namespace net::generic
             }
 
             const auto sent_bytes = ::send(
-                basic_socket<T>::native_handler(),
+                basic_socket<T>::native_handle(),
                 string.data(),
                 string.size(),
                 flags
@@ -194,7 +194,7 @@ namespace net::generic
             }
 
             const auto sent_bytes = ::sendto(
-                basic_socket<T>::native_handler(),
+                basic_socket<T>::native_handle(),
                 string.data(),
                 string.size(),
                 flags,
