@@ -9,7 +9,7 @@
 
 #include <sys/socket.h>
 
-#include "generic/basic_datagram_socket.hpp"
+#include "generic/basic_socket.hpp"
 
 #include "protocol_enumerator.hpp"
 #include "ipv4.hpp"
@@ -66,6 +66,6 @@ namespace net
         }
 
         using endpoint = domain_type::endpoint;
-        using socket   = generic::basic_datagram_socket<icmp>;
+        using socket   = generic::basic_socket<icmp>;
     };
 }

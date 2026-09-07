@@ -27,7 +27,7 @@
 namespace net::generic
 {
     template<name_requirement::Protocol T>
-    class basic_socket
+    class basic_socket final
     {
     public:
 
@@ -36,6 +36,8 @@ namespace net::generic
         using endpoint_type      = domain_type::endpoint;
         using flags_type         = int;
         using native_handle_type = int;
+
+        basic_socket() = default;
 
         basic_socket(const basic_socket&) = delete;
 
@@ -462,10 +464,6 @@ namespace net::generic
         {
             return protocol_type::type();
         }
-
-    protected:
-
-        basic_socket() = default;
 
     private:
 

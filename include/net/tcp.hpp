@@ -2,7 +2,7 @@
 
 #include <sys/socket.h>
 
-#include "generic/basic_stream_socket.hpp"
+#include "generic/basic_socket.hpp"
 
 #include "protocol_enumerator.hpp"
 #include "ipv4.hpp"
@@ -28,6 +28,6 @@ namespace net
             return SOCK_STREAM;
         }
 
-        using socket = generic::basic_stream_socket<tcp>;
+        using socket = generic::basic_socket<tcp>;
     };
 }
