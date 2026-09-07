@@ -56,52 +56,6 @@ namespace net::generic
             return *this;
         }
 
-        void receive(std::string& string, int flags = 0) const
-        {
-            std::error_code error;
-
-            receive(error, string, flags);
-
-            debug::throw_exception(
-                error, std::source_location::current().function_name());
-        }
-
-        void receive(
-            std::error_code& error,
-            std::string&     string,
-            int              flags = 0) const noexcept
-        {
-            if (is_open())
-            {
-                const auto string_size_before_receiving = string.size();
-
-                string.resize(string.capacity());
-
-                const auto received_bytes = ::recv(
-                    native_handle(), string.data(), string.capacity(), flags);
-
-                if (received_bytes == -1)
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator {errno});
-                }
-
-                else
-                {
-                    error.clear();
-                }
-
-                string.resize(received_bytes == -1 ?
-                    string_size_before_receiving : received_bytes);
-            }
-
-            else
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
-            }
-        }
-
         void send(std::string_view string, int flags = 0) const
         {
             std::error_code error;

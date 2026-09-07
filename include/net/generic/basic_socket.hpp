@@ -7,6 +7,7 @@
 #include <optional>
 #include <utility>
 #include <memory>
+#include <string>
 
 #include <cerrno>
 
@@ -29,9 +30,10 @@ namespace net::generic
     {
     public:
 
-        using protocol_type       = T;
-        using domain_type         = protocol_type::domain_type;
-        using endpoint_type       = domain_type::endpoint;
+        using protocol_type      = T;
+        using domain_type        = protocol_type::domain_type;
+        using endpoint_type      = domain_type::endpoint;
+        using flags_type         = int;
         using native_handle_type = int;
 
         basic_socket(const basic_socket&) = delete;
@@ -329,6 +331,65 @@ namespace net::generic
             }
 
             return remote_endpoint_.value();
+        }
+
+        void receive(std::string& string, flags_type flags = {}) const
+        {
+            std::error_code error;
+
+            receive(error, string, flags);
+
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+        }
+
+        void receive(
+            std::error_code& error,
+            std::string&     string,
+            flags_type       flags = {}) const noexcept
+        {
+            if (is_open())
+            {
+                if (is_connected())
+                {
+                    const auto string_size_before_receiving = string.size();
+
+                    string.resize(string.capacity());
+
+                    const auto received_bytes = ::recv(
+                        native_handle(),
+                        string.data(),
+                        string.capacity(),
+                        flags
+                    );
+
+                    if (received_bytes == -1)
+                    {
+                        error = std::make_error_code(
+                            error_code_enumerator {errno});
+                    }
+
+                    else
+                    {
+                        error.clear();
+                    }
+
+                    string.resize(received_bytes == -1 ?
+                        string_size_before_receiving : received_bytes);
+                }
+
+                else
+                {
+                    error = std::make_error_code(
+                        error_code_enumerator::socket_is_not_connected);
+                }
+            }
+
+            else
+            {
+                error = std::make_error_code(
+                    error_code_enumerator::socket_is_closed);
+            }
         }
 
         const std::optional<endpoint_type>&
