@@ -86,6 +86,6 @@ namespace net::test
         const std::exception& exception)
     {
         return std::string_view(exception.what())
-            .ends_with("broken pipe");
+            .ends_with("socket is not connected");
     }
 }

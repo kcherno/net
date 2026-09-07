@@ -55,44 +55,5 @@ namespace net::generic
 
             return *this;
         }
-
-        void send(std::string_view string, int flags = 0) const
-        {
-            std::error_code error;
-
-            send(error, string, flags);
-
-            debug::throw_exception(
-                error, std::source_location::current().function_name());
-        }
-
-        void send(
-            std::error_code& error,
-            std::string_view string,
-            int              flags = 0) const noexcept
-        {
-            if (is_open())
-            {
-                const auto sent_bytes = ::send(
-                    native_handle(), string.data(), string.size(), flags);
-
-                if (sent_bytes == -1)
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator {errno});
-                }
-
-                else
-                {
-                    error.clear();
-                }
-            }
-
-            else
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
-            }
-        }
     };
 }
