@@ -44,6 +44,9 @@ namespace net
                 case invalid_ipv4_address:
                     return "invalid ipv4 address";
 
+                case listen_operation_is_not_supported:
+                    return "protocol does not support the listen operation";
+
                 case socket_is_already_bound:
                     return "socket is already bound";
 

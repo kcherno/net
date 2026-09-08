@@ -9,16 +9,17 @@ namespace net
 {
     enum class error_code_enumerator
     {
-        address_is_already_in_use   = EADDRINUSE,
-        broken_pipe                 = EPIPE,
-        connection_refused          = ECONNREFUSED,
+        address_is_already_in_use         = EADDRINUSE,
+        broken_pipe                       = EPIPE,
+        connection_refused                = ECONNREFUSED,
         invalid_ipv4_address,
+        listen_operation_is_not_supported = EOPNOTSUPP,
         socket_is_already_bound,
-        socket_is_already_connected = EISCONN,
-        socket_is_closed            = EBADF,
+        socket_is_already_connected       = EISCONN,
+        socket_is_closed                  = EBADF,
         socket_is_not_bound,
-        socket_is_not_connected     = ENOTCONN,
-        success                     = 0
+        socket_is_not_connected           = ENOTCONN,
+        success                           = 0
     };
 }
 
