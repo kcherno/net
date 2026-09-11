@@ -19,6 +19,7 @@ namespace net
         socket_is_closed                  = EBADF,
         socket_is_not_bound,
         socket_is_not_connected           = ENOTCONN,
+        socket_is_not_listening,
         success                           = 0
     };
 }

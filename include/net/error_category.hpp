@@ -62,6 +62,9 @@ namespace net
                 case socket_is_not_connected:
                     return "socket is not connected";
 
+                case socket_is_not_listening:
+                    return "socket is not listening";
+
                 case success:
                     return "success";
             }
