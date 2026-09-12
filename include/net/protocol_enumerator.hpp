@@ -8,6 +8,7 @@ namespace net
     {
         undefined = 0,
         icmp      = 1,
-        tcp       = 6
+        tcp       = 6,
+        udp       = 17
     };
 }

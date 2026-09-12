@@ -8,6 +8,9 @@
 
 #include "net/icmp.hpp"
 #include "net/tcp.hpp"
+#include "net/udp.hpp"
+
+BOOST_AUTO_TEST_SUITE(protocol);
 
 BOOST_AUTO_TEST_CASE(icmp)
 {
@@ -18,3 +21,10 @@ BOOST_AUTO_TEST_CASE(tcp)
 {
     BOOST_TEST(net::name_requirement::Protocol<net::tcp>);
 }
+
+BOOST_AUTO_TEST_CASE(udp)
+{
+    BOOST_TEST(net::name_requirement::Protocol<net::udp>);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // protocol
