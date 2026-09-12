@@ -12,18 +12,18 @@ namespace net::test
             .ends_with("socket is closed");
     }
 
-    inline constexpr bool
-    accept_through_unbound_socket(const std::exception& exception) noexcept
-    {
-        return std::string_view(exception.what())
-            .ends_with("socket is not bound");
-    }
-
     inline constexpr bool accept_through_non_listening_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
             .ends_with("socket is not listening");
+    }
+
+    inline constexpr bool
+    accept_through_unbound_socket(const std::exception& exception) noexcept
+    {
+        return std::string_view(exception.what())
+            .ends_with("socket is not bound");
     }
 
     inline constexpr bool
@@ -61,11 +61,18 @@ namespace net::test
             .ends_with("socket is not bound");
     }
 
-    inline constexpr bool native_handle_through_closed_socket(
+    inline constexpr bool get_native_handle_through_closed_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
             .ends_with("socket is closed");
+    }
+
+    inline constexpr bool get_remote_endpoint_through_non_connected_socket(
+        const std::exception& exception) noexcept
+    {
+        return std::string_view(exception.what())
+            .ends_with("socket is not connected");
     }
 
     inline constexpr bool listen_operation_is_not_supported(
@@ -90,13 +97,6 @@ namespace net::test
     }
 
     inline constexpr bool receive_through_non_connected_socket(
-        const std::exception& exception) noexcept
-    {
-        return std::string_view(exception.what())
-            .ends_with("socket is not connected");
-    }
-
-    inline constexpr bool get_remote_endpoint_through_non_connected_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())

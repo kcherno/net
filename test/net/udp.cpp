@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         socket.native_handle(),
         std::system_error,
-        net::test::native_handle_through_closed_socket
+        net::test::get_native_handle_through_closed_socket
     );
 
     BOOST_CHECK_EQUAL(socket.protocol(), net::udp::protocol());
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(native_handle)
     BOOST_CHECK_EXCEPTION(
         socket.native_handle(),
         std::system_error,
-        net::test::native_handle_through_closed_socket
+        net::test::get_native_handle_through_closed_socket
     );
 
     std::error_code error;
