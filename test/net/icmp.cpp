@@ -13,6 +13,8 @@
 
 #include "net/detail/to_network_byte_order.hpp"
 
+#include "net/generic/basic_acceptor.hpp"
+
 #include "net/test/test.hpp"
 
 #include "net/protocol_enumerator.hpp"
@@ -52,6 +54,23 @@ namespace net
 }
 
 BOOST_AUTO_TEST_SUITE(icmp);
+
+BOOST_AUTO_TEST_SUITE(acceptor);
+
+BOOST_AUTO_TEST_CASE(listen)
+{
+    net::generic::basic_acceptor<net::icmp> acceptor;
+
+    BOOST_REQUIRE_NO_THROW(acceptor.open());
+
+    BOOST_CHECK_EXCEPTION(
+        acceptor.listen(),
+        std::system_error,
+        net::test::listen_operation_is_not_supported
+    );
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // icmp/acceptor
 
 BOOST_AUTO_TEST_SUITE(header);
 

@@ -27,9 +27,14 @@
 namespace net::generic
 {
     template<name_requirement::Protocol T>
+    class basic_acceptor;
+
+    template<name_requirement::Protocol T>
     class basic_socket final
     {
     public:
+
+        friend basic_acceptor<T>;
 
         using protocol_type      = T;
         using domain_type        = protocol_type::domain_type;
@@ -123,7 +128,13 @@ namespace net::generic
 
                     else
                     {
-                        endpoint_ = endpoint;
+                        endpoint_type e;
+
+                        auto s = e.size();
+
+                        ::getsockname(native_handle(), e.data(), &s);
+
+                        endpoint_ = e;
 
                         error.clear();
                     }
@@ -175,6 +186,17 @@ namespace net::generic
                     else
                     {
                         remote_endpoint_ = endpoint;
+
+                        if (not is_bound())
+                        {
+                            endpoint_type e;
+
+                            auto s = e.size();
+
+                            ::getsockname(native_handle(), e.data(), &s);
+
+                            endpoint_ = e;
+                        }
 
                         error.clear();
                     }
