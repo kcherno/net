@@ -18,15 +18,15 @@
 
 #include <sys/socket.h>
 
-#include "debug/throw_exception.hpp"
+#include "debug/debug.hpp"
 
 #include "detail/to_network_byte_order.hpp"
 #include "detail/to_host_byte_order.hpp"
-#include "detail/make_error_code.hpp"
+
+#include "net/error/error.hpp"
 
 #include "generic/basic_endpoint.hpp"
 
-#include "error_code_enumerator.hpp"
 #include "protocol_enumerator.hpp"
 
 namespace net
@@ -106,7 +106,7 @@ namespace net
                 if (result == 0)
                 {
                     error = std::make_error_code(
-                        error_code_enumerator::invalid_ipv4_address);
+                        error::code_enumerator::invalid_ipv4_address);
                 }
             }
 

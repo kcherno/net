@@ -5,15 +5,28 @@
 
 #include <cerrno>
 
-namespace net
+namespace net::error
 {
-    enum class error_code_enumerator
+    enum class code_enumerator
     {
         address_is_already_in_use         = EADDRINUSE,
         broken_pipe                       = EPIPE,
         connection_refused                = ECONNREFUSED,
+        destination_address_required      = EDESTADDRREQ,
         invalid_ipv4_address,
         listen_operation_is_not_supported = EOPNOTSUPP,
+
+#if EAGAIN == EWOULDBLOCK
+
+        resource_unavailable_try_again    = EAGAIN,
+
+#else
+
+        operation_would_block             = EWOULDBLOCK,
+        resource_unavailable_try_again    = EAGAIN,
+
+#endif
+
         socket_is_already_bound,
         socket_is_already_connected       = EISCONN,
         socket_is_closed                  = EBADF,
@@ -26,6 +39,7 @@ namespace net
 
 namespace std
 {
-    template<>
-    struct is_error_code_enum<net::error_code_enumerator> final : true_type {};
+    template<> struct is_error_code_enum<net::error::code_enumerator> final :
+        public true_type
+    {};
 }

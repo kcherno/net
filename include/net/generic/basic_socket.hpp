@@ -4,10 +4,8 @@
 #include <system_error>
 #include <string_view>
 #include <type_traits>
-#include <stdexcept>
 #include <optional>
 #include <utility>
-#include <memory>
 #include <string>
 
 #include <cerrno>
@@ -16,9 +14,9 @@
 
 #include <unistd.h>
 
-#include "net/debug/throw_exception.hpp"
+#include "net/debug/debug.hpp"
 
-#include "net/detail/make_error_code.hpp"
+#include "net/error/error.hpp"
 
 #include "net/name_requirement/protocol.hpp"
 
@@ -80,8 +78,8 @@ namespace net::generic
             if (this != &other)
             {
                 std::swap(endpoint_,        other.endpoint_);
+                std::swap(native_handle_,   other.native_handle_);
                 std::swap(remote_endpoint_, other.remote_endpoint_);
-                std::swap(socket_,          other.socket_);
             }
 
             return *this;
@@ -107,52 +105,50 @@ namespace net::generic
                 std::is_nothrow_assignable_v<
                     std::optional<endpoint_type>, endpoint_type>)
         {
-            if (is_open())
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
             {
-                if (is_bound())
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator::socket_is_already_bound);
-                }
+                return;
+            }
 
-                else
-                {
-                    const int result = ::bind(
-                        socket_.value(), endpoint.data(), endpoint.size());
-
-                    if (result == -1)
-                    {
-                        error = std::make_error_code(
-                            error_code_enumerator {errno});
-                    }
-
-                    else
-                    {
-                        endpoint_type e;
-
-                        auto s = e.size();
-
-                        ::getsockname(native_handle(), e.data(), &s);
-
-                        endpoint_ = e;
-
-                        error.clear();
-                    }
-                }
+            if (is_bound())
+            {
+                error = std::make_error_code(
+                    error::code_enumerator::socket_is_already_bound);
             }
 
             else
             {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                const int result = ::bind(
+                    native_handle.value(), endpoint.data(), endpoint.size());
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error::code_enumerator {errno});
+                }
+
+                else
+                {
+                    endpoint_type e;
+
+                    auto s = e.size();
+
+                    ::getsockname(native_handle.value(), e.data(), &s);
+
+                    endpoint_ = e;
+
+                    error.clear();
+                }
             }
         }
 
-        void connect(const endpoint_type& endpoint)
+        void connect(const endpoint_type& remote_endpoint)
         {
             std::error_code error;
 
-            connect(error, endpoint);
+            connect(error, remote_endpoint);
 
             debug::throw_exception(
                 error, std::source_location::current().function_name());
@@ -160,53 +156,55 @@ namespace net::generic
 
         void connect(
             std::error_code&     error,
-            const endpoint_type& endpoint) noexcept(
+            const endpoint_type& remote_endpoint) noexcept(
                 std::is_nothrow_assignable_v<
                     std::optional<endpoint_type>, endpoint_type>)
         {
-            if (is_open())
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
             {
-                if (is_connected())
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator::socket_is_already_connected);
-                }
+                return;
+            }
 
-                else
-                {
-                    const int result = ::connect(
-                        socket_.value(), endpoint.data(), endpoint.size());
-
-                    if (result == -1)
-                    {
-                        error = std::make_error_code(
-                            error_code_enumerator {errno});
-                    }
-
-                    else
-                    {
-                        remote_endpoint_ = endpoint;
-
-                        if (not is_bound())
-                        {
-                            endpoint_type e;
-
-                            auto s = e.size();
-
-                            ::getsockname(native_handle(), e.data(), &s);
-
-                            endpoint_ = e;
-                        }
-
-                        error.clear();
-                    }
-                }
+            if (is_connected())
+            {
+                error = std::make_error_code(
+                    error::code_enumerator::socket_is_already_connected);
             }
 
             else
             {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                const int result = ::connect(
+                    native_handle.value(),
+                    remote_endpoint.data(),
+                    remote_endpoint.size()
+                );
+
+                if (result == -1)
+                {
+                    error = std::make_error_code(
+                        error::code_enumerator {errno});
+                }
+
+                else
+                {
+                    remote_endpoint_ = remote_endpoint;
+
+                    if (not is_bound())
+                    {
+                        endpoint_type endpoint;
+
+                        auto size = endpoint.size();
+
+                        ::getsockname(
+                            native_handle.value(), endpoint.data(), &size);
+
+                        endpoint_ = endpoint;
+                    }
+
+                    error.clear();
+                }
             }
         }
 
@@ -214,14 +212,14 @@ namespace net::generic
         {
             if (is_open())
             {
-                ::close(socket_.value());
+                ::close(native_handle_.value());
             }
 
             endpoint_.reset();
 
-            remote_endpoint_.reset();
+            native_handle_.reset();
 
-            socket_.reset();
+            remote_endpoint_.reset();
         }
 
         static constexpr int domain() noexcept
@@ -231,16 +229,14 @@ namespace net::generic
 
         const endpoint_type& endpoint() const &
         {
-            if (not is_bound())
-            {
-                const auto error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_bound);
+            std::error_code error;
 
-                debug::throw_exception(
-                    error, std::source_location::current().function_name());
-            }
+            auto&& optional = endpoint(error);
 
-            return endpoint_.value();
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return optional.value();
         }
 
         const std::optional<endpoint_type>&
@@ -254,7 +250,7 @@ namespace net::generic
             else
             {
                 error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_bound);
+                    error::code_enumerator::socket_is_not_bound);
             }
 
             return endpoint_;
@@ -272,21 +268,19 @@ namespace net::generic
 
         constexpr bool is_open() const noexcept
         {
-            return socket_.has_value();
+            return native_handle_.has_value();
         }
 
         const native_handle_type& native_handle() const &
         {
-            if (not is_open())
-            {
-                const auto error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+            std::error_code error;
 
-                debug::throw_exception(
-                    error, std::source_location::current().function_name());
-            }
+            auto&& optional = native_handle(error);
 
-            return socket_.value();
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return optional.value();
         }
 
         const std::optional<native_handle_type>&
@@ -300,10 +294,10 @@ namespace net::generic
             else
             {
                 error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                    error::code_enumerator::socket_is_closed);
             }
 
-            return socket_;
+            return native_handle_;
         }
 
         void open()
@@ -318,22 +312,22 @@ namespace net::generic
 
         void open(std::error_code& error) noexcept
         {
-            const native_handle_type socket = ::socket(
+            const auto result = ::socket(
                 domain(),
                 type() | SOCK_CLOEXEC,
                 static_cast<int>(protocol())
             );
 
-            if (socket == -1)
+            if (result == -1)
             {
-                error = std::make_error_code(std::errc {errno});
+                error = std::make_error_code(error::code_enumerator {errno});
             }
 
             else
             {
                 close();
 
-                socket_ = socket;
+                native_handle_ = result;
 
                 error.clear();
             }
@@ -342,20 +336,6 @@ namespace net::generic
         static constexpr protocol_enumerator protocol() noexcept
         {
             return protocol_type::protocol();
-        }
-
-        const endpoint_type& remote_endpoint() const &
-        {
-            if (not is_connected())
-            {
-                const auto error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_connected);
-
-                debug::throw_exception(
-                    error, std::source_location::current().function_name());
-            }
-
-            return remote_endpoint_.value();
         }
 
         void receive(std::string& string, flags_type flags = {}) const
@@ -373,48 +353,103 @@ namespace net::generic
             std::string&     string,
             flags_type       flags = {}) const noexcept
         {
-            if (is_open())
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
             {
-                if (is_connected())
-                {
-                    const auto string_size_before_receiving = string.size();
+                return;
+            }
 
-                    string.resize(string.capacity());
+            const auto string_size_before_receiving = string.size();
 
-                    const auto received_bytes = ::recv(
-                        native_handle(),
-                        string.data(),
-                        string.capacity(),
-                        flags
-                    );
+            string.resize(string.capacity());
 
-                    if (received_bytes == -1)
-                    {
-                        error = std::make_error_code(
-                            error_code_enumerator {errno});
-                    }
+            const auto received_bytes = ::recv(
+                native_handle.value(),
+                string.data(),
+                string.size(),
+                flags
+            );
 
-                    else
-                    {
-                        error.clear();
-                    }
-
-                    string.resize(received_bytes == -1 ?
-                        string_size_before_receiving : received_bytes);
-                }
-
-                else
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator::socket_is_not_connected);
-                }
+            if (received_bytes == -1)
+            {
+                error = std::make_error_code(error::code_enumerator {errno});
             }
 
             else
             {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                error.clear();
             }
+
+            string.resize(received_bytes == -1 ?
+                string_size_before_receiving : received_bytes);
+        }
+
+        void receive_from(
+            std::string&   string,
+            endpoint_type& endpoint,
+            flags_type     flags = {}) const
+        {
+            std::error_code error;
+
+            receive_from(error, string, endpoint, flags);
+
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+        }
+
+        void receive_from(
+            std::error_code& error,
+            std::string&     string,
+            endpoint_type&   endpoint,
+            flags_type       flags = {}) const noexcept
+        {
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
+            {
+                return;
+            }
+
+            const auto string_size_before_receiving = string.size();
+
+            string.resize(string.capacity());
+
+            auto endpoint_size = endpoint.size();
+
+            const auto received_bytes = ::recvfrom(
+                native_handle.value(),
+                string.data(),
+                string.size(),
+                flags,
+                endpoint.data(),
+                &endpoint_size
+            );
+
+            if (received_bytes == -1)
+            {
+                error = std::make_error_code(error::code_enumerator {errno});
+            }
+
+            else
+            {
+                error.clear();
+            }
+
+            string.resize(received_bytes == -1 ?
+                string_size_before_receiving : received_bytes);
+        }
+
+        const endpoint_type& remote_endpoint() const &
+        {
+            std::error_code error;
+
+            auto&& optional = remote_endpoint(error);
+
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return optional.value();
         }
 
         const std::optional<endpoint_type>&
@@ -428,58 +463,112 @@ namespace net::generic
             else
             {
                 error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_connected);
+                    error::code_enumerator::socket_is_not_connected);
             }
 
             return remote_endpoint_;
         }
 
-        void send(std::string_view string, flags_type flags = {}) const
+        std::size_t send(std::string_view string, flags_type flags = {}) const
         {
             std::error_code error;
 
-            send(error, string, flags);
+            const auto sent_bytes = send(error, string, flags);
 
             debug::throw_exception(
                 error, std::source_location::current().function_name());
+
+            return sent_bytes;
         }
 
-        void send(
+        std::size_t send(
             std::error_code& error,
             std::string_view string,
             flags_type       flags = {}) const noexcept
         {
-            if (is_open())
+            if (string.empty())
             {
-                if (is_connected())
-                {
-                    const auto sent_bytes = ::send(
-                        native_handle(), string.data(), string.size(), flags);
+                error.clear();
 
-                    if (sent_bytes == -1)
-                    {
-                        error = std::make_error_code(
-                            error_code_enumerator {errno});
-                    }
-
-                    else
-                    {
-                        error.clear();
-                    }
-                }
-
-                else
-                {
-                    error = std::make_error_code(
-                        error_code_enumerator::socket_is_not_connected);
-                }
+                return 0;
             }
 
-            else
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
             {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+                return 0;
             }
+
+            const auto sent_bytes = ::send(
+                native_handle.value(), string.data(), string.size(), flags);
+
+            if (sent_bytes == -1)
+            {
+                error = std::make_error_code(error::code_enumerator {errno});
+
+                return 0;
+            }
+
+            error.clear();
+
+            return sent_bytes;
+        }
+
+        std::size_t send_to(
+            std::string_view     string,
+            const endpoint_type& endpoint,
+            flags_type           flags = {}) const
+        {
+            std::error_code error;
+
+            const auto sent_bytes = send_to(error, string, endpoint, flags);
+
+            debug::throw_exception(
+                error, std::source_location::current().function_name());
+
+            return sent_bytes;
+        }
+
+        std::size_t send_to(
+            std::error_code&     error,
+            std::string_view     string,
+            const endpoint_type& endpoint,
+            flags_type           flags = {}) const noexcept
+        {
+            if (string.empty())
+            {
+                error.clear();
+
+                return 0;
+            }
+
+            auto&& native_handle = this->native_handle(error);
+
+            if (error)
+            {
+                return 0;
+            }
+
+            const auto sent_bytes = ::sendto(
+                native_handle.value(),
+                string.data(),
+                string.size(),
+                flags,
+                endpoint.data(),
+                endpoint.size()
+            );
+
+            if (sent_bytes == -1)
+            {
+                error = std::make_error_code(error::code_enumerator {errno});
+
+                return 0;
+            }
+
+            error.clear();
+
+            return sent_bytes;
         }
 
         static constexpr int type() noexcept
@@ -490,7 +579,7 @@ namespace net::generic
     private:
 
         std::optional<endpoint_type>      endpoint_;
+        std::optional<native_handle_type> native_handle_;
         std::optional<endpoint_type>      remote_endpoint_;
-        std::optional<native_handle_type> socket_;
     };
 }

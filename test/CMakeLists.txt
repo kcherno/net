@@ -22,6 +22,8 @@ function(add_net_unit_test test_file)
 
     target_link_libraries(${test_name} PRIVATE Boost::unit_test_framework)
 
+    target_link_libraries(${test_name} PRIVATE net)
+
     target_sources(${test_name}
         PRIVATE ${test_file}
 

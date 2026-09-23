@@ -68,7 +68,7 @@ namespace net::test
             .ends_with("socket is closed");
     }
 
-    inline constexpr bool get_remote_endpoint_through_non_connected_socket(
+    inline constexpr bool get_remote_endpoint_through_unconnected_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
@@ -96,7 +96,7 @@ namespace net::test
             .ends_with("socket is closed");
     }
 
-    inline constexpr bool receive_through_non_connected_socket(
+    inline constexpr bool receive_through_unconnected_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
@@ -110,10 +110,17 @@ namespace net::test
             .ends_with("socket is closed");
     }
 
-    inline constexpr bool send_through_non_connected_socket(
+    inline constexpr bool send_through_unconnected_stream_socket(
         const std::exception& exception) noexcept
     {
         return std::string_view(exception.what())
-            .ends_with("socket is not connected");
+            .ends_with("broken pipe");
+    }
+
+    inline constexpr bool send_through_unconnected_datagram_socket(
+        const std::exception& exception) noexcept
+    {
+        return std::string_view(exception.what())
+            .ends_with("destination address required");
     }
 }

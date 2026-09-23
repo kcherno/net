@@ -10,13 +10,12 @@
 
 #include <sys/socket.h>
 
-#include "net/debug/throw_exception.hpp"
+#include "net/debug/debug.hpp"
 
-#include "net/detail/make_error_code.hpp"
+#include "net/error/error.hpp"
 
 #include "net/name_requirement/protocol.hpp"
 
-#include "net/error_code_enumerator.hpp"
 #include "net/protocol_enumerator.hpp"
 
 #include "basic_socket.hpp"
@@ -108,26 +107,10 @@ namespace net::generic
         std::optional<socket_type>
         accept(std::error_code& error) const noexcept
         {
-            if (not is_open())
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
-
-                return std::nullopt;
-            }
-
-            if (not is_bound())
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_bound);
-
-                return std::nullopt;
-            }
-
             if (not is_listening())
             {
                 error = std::make_error_code(
-                    error_code_enumerator::socket_is_not_listening);
+                    error::code_enumerator::socket_is_not_listening);
 
                 return std::nullopt;
             }
@@ -137,7 +120,7 @@ namespace net::generic
             auto remote_endpoint_size = remote_endpoint.size();
 
             auto result = ::accept(
-                socket_.native_handle(),
+                native_handle(),
                 remote_endpoint.data(),
                 &remote_endpoint_size
             );
@@ -145,7 +128,7 @@ namespace net::generic
             if (result == -1)
             {
                 error = std::make_error_code(
-                    error_code_enumerator {errno});
+                    error::code_enumerator {errno});
 
                 return std::nullopt;
             }
@@ -159,8 +142,8 @@ namespace net::generic
             socket_type socket;
 
             socket.endpoint_        = std::move(endpoint);
+            socket.native_handle_   = result;
             socket.remote_endpoint_ = std::move(remote_endpoint);
-            socket.socket_          = result;
 
             return std::optional<socket_type> {
                 socket_type {std::move(socket)}
@@ -230,20 +213,19 @@ namespace net::generic
             std::error_code& error,
             int              queue_size = maximum_queue_size) noexcept
         {
-            if (not is_open())
-            {
-                error = std::make_error_code(
-                    error_code_enumerator::socket_is_closed);
+            auto&& native_handle = this->native_handle(error);
 
+            if (error)
+            {
                 return;
             }
-            
-            const int result = ::listen(native_handle(), queue_size);
+
+            const int result = ::listen(native_handle.value(), queue_size);
 
             if (result == -1)
             {
                 error = std::make_error_code(
-                    error_code_enumerator {errno});
+                    error::code_enumerator {errno});
             }
 
             else
@@ -254,7 +236,7 @@ namespace net::generic
 
                     auto size = endpoint.size();
 
-                    ::getsockname(native_handle(), endpoint.data(), &size);
+                    ::getsockname(native_handle.value(), endpoint.data(), &size);
 
                     socket_.endpoint_ = endpoint;
                 }

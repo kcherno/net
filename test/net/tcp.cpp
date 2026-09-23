@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         acceptor.accept(),
         std::system_error,
-        net::test::accept_through_closed_socket
+        net::test::accept_through_non_listening_socket
     );
 
     {
@@ -433,14 +433,14 @@ BOOST_AUTO_TEST_SUITE_END(); // tcp/acceptor/assignment_operator
 
 BOOST_AUTO_TEST_SUITE(accept);
 
-BOOST_AUTO_TEST_CASE(accept_through_closed_socket)
+BOOST_AUTO_TEST_CASE(through_closed_socket)
 {
     net::tcp::acceptor acceptor;
 
     BOOST_CHECK_EXCEPTION(
         acceptor.accept(),
         std::system_error,
-        net::test::accept_through_closed_socket
+        net::test::accept_through_non_listening_socket
     );
 
     std::error_code error;
@@ -450,26 +450,28 @@ BOOST_AUTO_TEST_CASE(accept_through_closed_socket)
     BOOST_TEST(error);
 }
 
-BOOST_AUTO_TEST_CASE(accept_through_unbound_socket)
+BOOST_AUTO_TEST_CASE(through_unbound_socket)
 {
     net::tcp::acceptor acceptor;
 
     BOOST_REQUIRE_NO_THROW(acceptor.open());
 
-    BOOST_CHECK_EXCEPTION(
-        acceptor.accept(),
-        std::system_error,
-        net::test::accept_through_unbound_socket
-    );
+    BOOST_REQUIRE_NO_THROW(acceptor.listen());
+
+    const net::tcp::socket socket_1 {acceptor.endpoint()};
+
+    BOOST_REQUIRE_NO_THROW(acceptor.accept());
+
+    const net::tcp::socket socket_2 {acceptor.endpoint()};
 
     std::error_code error;
 
     BOOST_CHECK_NO_THROW(acceptor.accept(error));
 
-    BOOST_TEST(error);
+    BOOST_TEST(not error);
 }
 
-BOOST_AUTO_TEST_CASE(accept_through_non_listening_socket)
+BOOST_AUTO_TEST_CASE(through_non_listening_socket)
 {
     net::tcp::acceptor acceptor;
 
@@ -488,29 +490,6 @@ BOOST_AUTO_TEST_CASE(accept_through_non_listening_socket)
     BOOST_CHECK_NO_THROW(acceptor.accept(error));
 
     BOOST_TEST(error);
-}
-
-BOOST_AUTO_TEST_CASE(successful_accepting)
-{
-    net::tcp::acceptor acceptor;
-
-    BOOST_REQUIRE_NO_THROW(acceptor.open());
-
-    BOOST_REQUIRE_NO_THROW(acceptor.bind(net::ipv4::loopback));
-
-    BOOST_REQUIRE_NO_THROW(acceptor.listen());
-
-    const net::tcp::socket socket_1 {acceptor.endpoint()};
-
-    BOOST_REQUIRE_NO_THROW(acceptor.accept());
-
-    const net::tcp::socket socket_2 {acceptor.endpoint()};
-
-    std::error_code error;
-
-    BOOST_CHECK_NO_THROW(acceptor.accept(error));
-
-    BOOST_TEST(not error);
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // tcp/acceptor/accept
@@ -1024,7 +1003,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::get_remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_unconnected_socket
     );
 
     {
@@ -1380,13 +1359,90 @@ BOOST_AUTO_TEST_CASE(receive)
     BOOST_CHECK_EXCEPTION(
         socket.receive(string),
         std::system_error,
-        net::test::receive_through_non_connected_socket
+        net::test::receive_through_unconnected_socket
     );
 
     BOOST_CHECK_NO_THROW(socket.receive(error, string));
 
     BOOST_TEST(error);
 }
+
+BOOST_AUTO_TEST_SUITE(receive_from);
+
+BOOST_AUTO_TEST_CASE(receive_through_closed_socket)
+{
+    const net::tcp::socket socket;
+
+    std::string string;
+
+    net::tcp::endpoint endpoint;
+
+    BOOST_CHECK_EXCEPTION(
+        socket.receive_from(string, endpoint),
+        std::system_error,
+        net::test::receive_through_closed_socket
+    );
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.receive_from(error, string, endpoint));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(receive_through_unconnected_socket)
+{
+    net::tcp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.open());
+
+    std::string string;
+
+    net::tcp::endpoint endpoint;
+
+    BOOST_CHECK_EXCEPTION(
+        socket.receive_from(string, endpoint),
+        std::system_error,
+        net::test::receive_through_unconnected_socket
+    );
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.receive_from(error, string, endpoint));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(successful_receipt_from)
+{
+    const net::tcp::acceptor acceptor {net::ipv4::loopback};
+
+    net::tcp::socket socket {acceptor.endpoint()};
+
+    const auto& dummy = acceptor.accept();
+
+    BOOST_REQUIRE_NO_THROW(dummy.send("abc"));
+
+    std::string string;
+
+    net::tcp::endpoint endpoint;
+
+    BOOST_REQUIRE_NO_THROW(socket.receive_from(string, endpoint));
+
+    BOOST_CHECK_EQUAL(string, "abc");
+
+    std::error_code error;
+
+    BOOST_REQUIRE_NO_THROW(dummy.send("dfg"));
+
+    BOOST_CHECK_NO_THROW(socket.receive_from(error, string, endpoint));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(string, "dfg");
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // tcp/socket/receive_from
 
 BOOST_AUTO_TEST_CASE(remote_endpoint)
 {
@@ -1395,7 +1451,7 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::get_remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_unconnected_socket
     );
 
     std::error_code error;
@@ -1409,7 +1465,7 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::get_remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_unconnected_socket
     );
 
     BOOST_CHECK_NO_THROW(socket.remote_endpoint(error));
@@ -1417,38 +1473,205 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_TEST(error);
 }
 
-BOOST_AUTO_TEST_CASE(send)
+BOOST_AUTO_TEST_SUITE(send);
+
+BOOST_AUTO_TEST_CASE(through_closed_socket)
 {
-    ::signal(SIGPIPE, SIG_IGN);
+    const net::tcp::socket socket;
 
-    const std::string string;
+    BOOST_REQUIRE_NO_THROW(socket.send(""));
 
-    net::tcp::socket socket;
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send(error, ""));
+
+    BOOST_TEST(not error);
 
     BOOST_CHECK_EXCEPTION(
-        socket.send(string),
+        socket.send("abcd"),
         std::system_error,
         net::test::send_through_closed_socket
     );
 
-    std::error_code error;
-
-    BOOST_CHECK_NO_THROW(socket.send(error, string));
-
-    BOOST_TEST(error);
-
-    BOOST_REQUIRE_NO_THROW(socket.open());
-
-    BOOST_CHECK_EXCEPTION(
-        socket.send(string),
-        std::system_error,
-        net::test::send_through_non_connected_socket
-    );
-
-    BOOST_CHECK_NO_THROW(socket.send(error, string));
+    BOOST_CHECK_NO_THROW(socket.send(error, "abcd"));
 
     BOOST_TEST(error);
 }
+
+BOOST_AUTO_TEST_CASE(through_unconnected_socket)
+{
+    ::signal(SIGPIPE, SIG_IGN);
+
+    net::tcp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.open());
+
+    BOOST_REQUIRE_NO_THROW(socket.send(""));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send(error, ""));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send("0123456789"),
+        std::system_error,
+        net::test::send_through_unconnected_stream_socket
+    );
+
+    BOOST_CHECK_NO_THROW(socket.send(error, "0123456789"));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(successfully_sent)
+{
+    const net::tcp::acceptor acceptor {net::ipv4::loopback};
+
+    const net::tcp::socket sender {acceptor.endpoint()};
+
+    const auto receiver = acceptor.accept();
+
+    auto sent_bytes = sender.send("");
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    sent_bytes = sender.send(error, "");
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    sent_bytes = sender.send("0123456789");
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    std::string string;
+
+    BOOST_REQUIRE_NO_THROW(string.reserve(256));
+
+    BOOST_REQUIRE_NO_THROW(receiver.receive(string));
+
+    BOOST_CHECK_EQUAL(string.size(), 10);
+
+    BOOST_CHECK_EQUAL(string, "0123456789");
+
+    sent_bytes = sender.send(error, "abcd");
+
+    BOOST_CHECK_NO_THROW(receiver.receive(error, string));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(string.size(), 4);
+
+    BOOST_CHECK_EQUAL(string, "abcd");
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // tcp/socket/send
+
+BOOST_AUTO_TEST_SUITE(send_to);
+
+BOOST_AUTO_TEST_CASE(through_closed_socket)
+{
+    net::tcp::socket socket;
+
+    auto sent_bytes = socket.send_to("", net::ipv4::loopback);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    sent_bytes = socket.send_to(error, "", net::ipv4::loopback);
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send_to("0123456789", net::ipv4::loopback),
+        std::system_error,
+        net::test::send_through_closed_socket
+    );
+
+    BOOST_CHECK_NO_THROW(
+        socket.send_to(error, "0123456789", net::ipv4::loopback));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(through_unconnected_socket)
+{
+    net::tcp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.open());
+
+    BOOST_REQUIRE_NO_THROW(socket.send_to("", net::ipv4::loopback));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send_to(error, "", net::ipv4::loopback));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send_to("0123456789", net::ipv4::loopback),
+        std::system_error,
+        net::test::send_through_unconnected_stream_socket
+    );
+
+    BOOST_CHECK_NO_THROW(
+        socket.send_to(error, "0123456789", net::ipv4::loopback));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(successful_sending_to)
+{
+    const net::tcp::acceptor acceptor {net::ipv4::loopback};
+
+    net::tcp::socket sender {acceptor.endpoint()};
+
+    const auto receiver = acceptor.accept();
+
+    auto sent_bytes = sender.send_to("", receiver.endpoint());
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    sent_bytes = sender.send_to(error, "", receiver.endpoint());
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    // ignores the specified endpoint
+    sent_bytes = sender.send_to("0123456789", receiver.endpoint());
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    std::string string;
+
+    string.reserve(256);
+
+    BOOST_REQUIRE_NO_THROW(receiver.receive(string));
+
+    BOOST_CHECK_EQUAL(string, "0123456789");
+
+    // ignores the specified endpoint
+    BOOST_CHECK_NO_THROW(sender.send_to(error, "abcd", net::ipv4::loopback));
+
+    BOOST_TEST(not error);
+
+    BOOST_REQUIRE_NO_THROW(receiver.receive(string));
+
+    BOOST_CHECK_EQUAL(string, "abcd");
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // tcp/socket/send_to
 
 BOOST_AUTO_TEST_CASE(type)
 {

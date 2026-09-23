@@ -28,6 +28,7 @@ target_compile_options(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
     PUBLIC ${PROJECT_SOURCE_DIR}/src/net/detail/calculate_checksum.cpp
+    PUBLIC ${PROJECT_SOURCE_DIR}/src/net/error/category.cpp
     PUBLIC ${PROJECT_SOURCE_DIR}/src/net/icmp.cpp
     PUBLIC ${PROJECT_SOURCE_DIR}/src/net/ipv4.cpp
 

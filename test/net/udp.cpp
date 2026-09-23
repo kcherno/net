@@ -3,10 +3,13 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <system_error>
+#include <string_view>
 #include <exception>
 #include <concepts>
 #include <ostream>
 #include <utility>
+
+#include <cerrno>
 
 #include <boost/test/unit_test.hpp>
 
@@ -124,7 +127,7 @@ BOOST_AUTO_TEST_CASE(default_constructor)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::get_remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_unconnected_socket
     );
 
     {
@@ -447,6 +450,127 @@ BOOST_AUTO_TEST_CASE(open)
     BOOST_TEST(socket.is_open());
 }
 
+BOOST_AUTO_TEST_SUITE(receive);
+
+BOOST_AUTO_TEST_CASE(through_closed_socket)
+{
+    const net::udp::socket socket;
+
+    std::string string;
+
+    BOOST_REQUIRE_NO_THROW(string.reserve(256));
+
+    BOOST_CHECK_EXCEPTION(
+        socket.receive(string),
+        std::system_error,
+        net::test::receive_through_closed_socket
+    );
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.receive(error, string));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(through_unconnected_socket)
+{
+    net::udp::socket receiver;
+
+    BOOST_REQUIRE_NO_THROW(receiver.open());
+
+    BOOST_REQUIRE_NO_THROW(receiver.bind(net::ipv4::loopback));
+
+    const net::udp::socket sender_1 {receiver.endpoint()};
+
+    BOOST_REQUIRE_NO_THROW(sender_1.send("0123456789"));
+
+    std::string string;
+
+    BOOST_REQUIRE_NO_THROW(string.reserve(256));
+
+    BOOST_REQUIRE_NO_THROW(receiver.receive(string));
+
+    BOOST_CHECK_EQUAL(string, "0123456789");
+
+    const net::udp::socket sender_2 {receiver.endpoint()};
+
+    BOOST_REQUIRE_NO_THROW(sender_2.send("abcd"));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(receiver.receive(error, string));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(string, "abcd");
+}
+
+BOOST_AUTO_TEST_CASE(through_connected_socket)
+{
+    net::udp::socket sender_1;
+
+    BOOST_REQUIRE_NO_THROW(sender_1.open());
+
+    BOOST_REQUIRE_NO_THROW(sender_1.bind(net::ipv4::loopback));
+
+    const net::udp::socket receiver {sender_1.endpoint()};
+
+    BOOST_REQUIRE_NO_THROW(
+        sender_1.send_to("0123456789", receiver.endpoint()));
+
+    std::string string;
+
+    BOOST_REQUIRE_NO_THROW(string.reserve(256));
+
+    BOOST_REQUIRE_NO_THROW(receiver.receive(string));
+
+    BOOST_CHECK_EQUAL(string, "0123456789");
+
+    BOOST_REQUIRE_NO_THROW(sender_1.send_to("abcd", receiver.endpoint()));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(receiver.receive(error, string));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(string, "abcd");
+
+    net::udp::socket sender_2;
+
+    BOOST_REQUIRE_NO_THROW(sender_2.open());
+
+    BOOST_REQUIRE_NO_THROW(sender_2.send_to("ABC", receiver.endpoint()));
+
+    BOOST_CHECK_EXCEPTION(
+        receiver.receive(string, MSG_DONTWAIT),
+        std::system_error,
+        [](const std::exception& exception)
+        {
+            std::string_view what {exception.what()};
+
+#if EAGAIN == EWOULDBLOCK
+
+            return what.ends_with(
+                "socket is in non-blocking mode and the data is not yet ready"
+            );
+
+#else
+
+            return what.ends_with(
+                "socket is in non-blocking mode and the operation would block"
+            ) || what.ends_with(
+                "socket is in non-blocking mode and the data is not yet ready"
+            );
+
+#endif
+        }
+    );
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // udp/socket/receive
+
 BOOST_AUTO_TEST_CASE(protocol)
 {
     BOOST_TEST((std::same_as<net::udp::socket::protocol_type, net::udp>));
@@ -464,7 +588,7 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
     BOOST_CHECK_EXCEPTION(
         socket.remote_endpoint(),
         std::system_error,
-        net::test::get_remote_endpoint_through_non_connected_socket
+        net::test::get_remote_endpoint_through_unconnected_socket
     );
 
     std::error_code error;
@@ -481,6 +605,219 @@ BOOST_AUTO_TEST_CASE(remote_endpoint)
 
     BOOST_TEST(not error);
 }
+
+BOOST_AUTO_TEST_SUITE(send);
+
+BOOST_AUTO_TEST_CASE(through_closed_socket)
+{
+    const net::udp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.send(""));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send(error, ""));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send("0123456789"),
+        std::system_error,
+        net::test::send_through_closed_socket
+    );
+
+    BOOST_CHECK_NO_THROW(socket.send(error, "0123456789"));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(through_unconnected_socket)
+{
+    net::udp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.open());
+
+    BOOST_REQUIRE_NO_THROW(socket.send(""));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send(error, ""));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send("0123456789"),
+        std::system_error,
+        net::test::send_through_unconnected_datagram_socket
+    );
+
+    BOOST_CHECK_NO_THROW(socket.send(error, "0123456789"));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(successful_sending)
+{
+    net::udp::socket receiver;
+
+    BOOST_REQUIRE_NO_THROW(receiver.open());
+
+    BOOST_REQUIRE_NO_THROW(receiver.bind(net::ipv4::loopback));
+
+    const net::udp::socket sender {receiver.endpoint()};
+
+    std::size_t sent_bytes;
+
+    BOOST_REQUIRE_NO_THROW((sent_bytes = sender.send("")));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW((sent_bytes = sender.send(error, "")));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    BOOST_REQUIRE_NO_THROW((sent_bytes = sender.send("0123456789")));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    BOOST_CHECK_NO_THROW((sent_bytes = sender.send(error, "abcd")));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 4);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // udp/socket/send
+
+BOOST_AUTO_TEST_SUITE(send_to);
+
+BOOST_AUTO_TEST_CASE(through_closed_socket)
+{
+    const net::udp::socket socket;
+
+    BOOST_REQUIRE_NO_THROW(socket.send_to("", net::ipv4::loopback));
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(socket.send_to(error, "", net::ipv4::loopback));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EXCEPTION(
+        socket.send_to("0123456789", net::ipv4::loopback),
+        std::system_error,
+        net::test::send_through_closed_socket
+    );
+
+    BOOST_CHECK_NO_THROW(
+        socket.send_to(error, "0123456789", net::ipv4::loopback));
+
+    BOOST_TEST(error);
+}
+
+BOOST_AUTO_TEST_CASE(through_unconnected_socket)
+{
+    net::udp::socket receiver;
+
+    BOOST_REQUIRE_NO_THROW(receiver.open());
+
+    BOOST_REQUIRE_NO_THROW(receiver.bind(net::ipv4::loopback));
+
+    net::udp::socket sender;
+
+    BOOST_REQUIRE_NO_THROW(sender.open());
+
+    std::size_t sent_bytes;
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to("", receiver.endpoint())));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    BOOST_CHECK_NO_THROW(
+        (sent_bytes = sender.send_to(error, "", receiver.endpoint())));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to("0123456789", receiver.endpoint())));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    BOOST_CHECK_NO_THROW(
+        (sent_bytes = sender.send_to(error, "abcd", receiver.endpoint())));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 4);
+}
+
+BOOST_AUTO_TEST_CASE(through_connected_socket)
+{
+    net::udp::socket receiver_1;
+
+    BOOST_REQUIRE_NO_THROW(receiver_1.open());
+
+    BOOST_REQUIRE_NO_THROW(receiver_1.bind(net::ipv4::loopback));
+
+    const net::udp::socket sender {receiver_1.endpoint()};
+
+    net::udp::socket receiver_2;
+
+    BOOST_REQUIRE_NO_THROW(receiver_2.open());
+
+    BOOST_REQUIRE_NO_THROW(receiver_2.bind(net::ipv4::loopback));
+
+    std::size_t sent_bytes;
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to("", receiver_2.endpoint())));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    std::error_code error;
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to(error, "", receiver_2.endpoint())));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 0);
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to("0123456789", receiver_2.endpoint())));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send_to(error, "abcd", receiver_2.endpoint())));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 4);
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send("0123456789")));
+
+    BOOST_CHECK_EQUAL(sent_bytes, 10);
+
+    BOOST_REQUIRE_NO_THROW(
+        (sent_bytes = sender.send(error, "abcd")));
+
+    BOOST_TEST(not error);
+
+    BOOST_CHECK_EQUAL(sent_bytes, 4);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // udp/socket/send_to
 
 BOOST_AUTO_TEST_CASE(type)
 {
