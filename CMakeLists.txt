@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(net LANGUAGES CXX VERSION 1.0.0)
+project(net LANGUAGES CXX VERSION 1.1.0)
 
 option(enable_net_debug_mode "enable debug mode" OFF)
 option(enable_net_unit_tests "enable unit tests" OFF)
